@@ -444,9 +444,15 @@ static const struct dvb_frontend_ops gx1503_ops = {
 		.delsys = {SYS_DVBT},
 		.info = {
 			.name = "NationalChip gx1503",
+#ifdef MHz
 			.frequency_min_hz = 474 * MHz,
 			.frequency_max_hz = 858 * MHz,
 			.frequency_stepsize_hz = 10 * kHz,
+#else
+			.frequency_min = 474000000,
+			.frequency_max = 858000000,
+			.frequency_stepsize = 10000,
+#endif
 			.caps = 
 				FE_CAN_FEC_AUTO |
 				FE_CAN_QAM_AUTO |

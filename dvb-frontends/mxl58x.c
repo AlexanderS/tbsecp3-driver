@@ -844,8 +844,13 @@ static struct dvb_frontend_ops mxl_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2, SYS_DSS },
 	.info = {
 		.name			= "MXL5XX",
+#ifdef MHz
 		.frequency_min_hz	=  300 * MHz,
 		.frequency_max_hz	= 2350 * MHz,
+#else
+		.frequency_min		=  300000,
+		.frequency_max		= 2350000,
+#endif
 		.symbol_rate_min	= 1000000,
 		.symbol_rate_max	= 45000000,
 		.caps			= FE_CAN_INVERSION_AUTO |

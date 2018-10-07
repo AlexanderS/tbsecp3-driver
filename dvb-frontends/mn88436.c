@@ -1325,9 +1325,15 @@ static const struct dvb_frontend_ops mn88436_ops = {
 	.delsys = {SYS_ATSC,SYS_DVBC_ANNEX_B},
 	.info = {
 		.name = "MN88436 ATSC/QAMB frontend",
+#ifdef MHz
 		.frequency_min_hz	= 44 * MHz,
 		.frequency_max_hz	= 1002 * MHz,
 		.frequency_stepsize_hz	= 62500,
+#else
+		.frequency_min		= 44000000,
+		.frequency_max		= 1002000000,
+		.frequency_stepsize	= 62500,
+#endif
 		.caps = FE_CAN_QAM_64 | FE_CAN_QAM_256 | FE_CAN_8VSB
 
 	},

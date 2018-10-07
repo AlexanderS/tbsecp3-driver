@@ -2258,9 +2258,15 @@ static struct dvb_frontend_ops mtv23x_ops = {
 	.delsys = {SYS_ISDBT},
 	.info 	= {
 		.name = "RAONTECH MTV23X",
+#ifdef MHz
 		.frequency_min_hz = 76 * MHz,
 		.frequency_max_hz = 858 * MHz,
 		.frequency_stepsize_hz = 166667,
+#else
+		.frequency_min = 76000000,
+		.frequency_max = 858000000,
+		.frequency_stepsize = 166667,
+#endif
 		.caps =	FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
 				FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 | FE_CAN_FEC_AUTO |
 				FE_CAN_QPSK | FE_CAN_QAM_16 |
