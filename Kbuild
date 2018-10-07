@@ -43,5 +43,6 @@ mxl603-objs := tuners/mxl603.o
 obj-m += si2157.o mxl603.o
 
 ccflags-y += -I$(M)/dvb-frontends/
+ccflags-y += -I$(M)/dvb-frontends/stid135/
 ccflags-y += -I$(M)/tuners/
 ccflags-y += -DTBS_STANDALONE
