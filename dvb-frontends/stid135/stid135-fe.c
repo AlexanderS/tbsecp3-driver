@@ -577,6 +577,7 @@ static int stid135_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 	return 0;
 }
 
+#ifndef TBS_STANDALONE
 static void spi_read(struct dvb_frontend *fe, struct ecp3_info *ecp3inf)
 {
 	struct stv *state = fe->demodulator_priv;
@@ -596,6 +597,7 @@ static void spi_write(struct dvb_frontend *fe,struct ecp3_info *ecp3inf)
 		state->base->write_properties(adapter,ecp3inf->reg, ecp3inf->data);
 	return ;
 }
+#endif
 
 static struct dvb_frontend_ops stid135_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2, SYS_DSS },
@@ -634,8 +636,10 @@ static struct dvb_frontend_ops stid135_ops = {
 	.read_snr			= stid135_read_snr,
 	.read_ber			= stid135_read_ber,
 	.read_ucblocks			= stid135_read_ucblocks,
+#ifndef TBS_STANDALONE
 	.spi_read			= spi_read,
 	.spi_write			= spi_write,
+#endif
 };
 
 static struct stv_base *match_base(struct i2c_adapter  *i2c, u8 adr)

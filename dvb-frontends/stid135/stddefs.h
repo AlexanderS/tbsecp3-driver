@@ -45,6 +45,10 @@ Description : Contains a number of generic type declarations and defines.
 
 
 /* Includes ---------------------------------------------------------------- */
+#ifdef HOST_PC
+	#include <linux/types.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
