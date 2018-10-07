@@ -120,6 +120,7 @@ static int tas2101_read_status(struct dvb_frontend *fe, enum fe_status *status)
 return 0;
 
 }
+#ifndef TBS_STANDALONE
 static void tas2101_spi_read(struct dvb_frontend *fe, struct ecp3_info *ecp3inf)
 {
 
@@ -172,6 +173,7 @@ static void tas2101_reg_i2c_write(struct dvb_frontend *fe,struct usbi2c_access *
 		priv->cfg->i2cwrite_properties(adapter,pi2cinf->chip_addr,pi2cinf->reg, pi2cinf->num, pi2cinf->buf);
 	return ;
 }
+#endif
 
 static int tas2101_set_voltage(struct dvb_frontend *fe,
 	enum fe_sec_voltage voltage)
@@ -455,12 +457,14 @@ static struct dvb_frontend_ops tas2101_ops = {
 	.set_frontend = tas2101_set_frontend,
 	.get_frontend = tas2101_get_frontend,
 
+#ifndef TBS_STANDALONE
 	.spi_read			= tas2101_spi_read,
 	.spi_write			= tas2101_spi_write,
 	.mcu_read			= tas2101_mcu_read,
 	.mcu_write			= tas2101_mcu_write,
 	.reg_i2cread			= tas2101_reg_i2c_read,
 	.reg_i2cwrite			= tas2101_reg_i2c_write,
+#endif
 
 };
 

@@ -1206,6 +1206,7 @@ static int si2183_get_algo(struct dvb_frontend *fe)
 	return DVBFE_ALGO_HW;
 }
 
+#ifndef TBS_STANDALONE
 static int si2183_set_property(struct dvb_frontend *fe,
 		u32 cmd, u32 data)
 {
@@ -1247,6 +1248,7 @@ static int si2183_set_property(struct dvb_frontend *fe,
 
 	return ret;
 }
+#endif
 
 
 static int send_diseqc_cmd(struct dvb_frontend *fe,
@@ -1351,6 +1353,7 @@ err:
 	return ret;
 }
 
+#ifndef TBS_STANDALONE
 static void si2183_spi_read(struct dvb_frontend *fe, struct ecp3_info *ecp3inf)
 {
 	struct i2c_client *client = fe->demodulator_priv;
@@ -1370,6 +1373,7 @@ static void si2183_spi_write(struct dvb_frontend *fe,struct ecp3_info *ecp3inf)
 	dev->write_properties(client->adapter,ecp3inf->reg, ecp3inf->data);
 	return ;
 }
+#endif
 
 
 static const struct dvb_frontend_ops si2183_ops = {
@@ -1418,7 +1422,9 @@ static const struct dvb_frontend_ops si2183_ops = {
 	.get_frontend_algo = si2183_get_algo,
 	.tune = si2183_tune,
 
+#ifndef TBS_STANDALONE
 	.set_property			= si2183_set_property,
+#endif
 
 	.set_tone			= si2183_set_tone,
 	.diseqc_send_burst		= si2183_diseqc_send_burst,
@@ -1427,8 +1433,10 @@ static const struct dvb_frontend_ops si2183_ops = {
 	.i2c_gate_ctrl			= i2c_gate_ctrl,
 #endif
 
+#ifndef TBS_STANDALONE
 	.spi_read			= si2183_spi_read,
 	.spi_write			= si2183_spi_write,
+#endif
 
 
 };

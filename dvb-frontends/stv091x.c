@@ -1206,7 +1206,11 @@ static int get_frontend(struct dvb_frontend *fe, struct dtv_frontend_properties 
 			APSK_32, 
 		};
 		enum fe_code_rate modcod2fec[0x20] = {
-			FEC_NONE, FEC_1_4, FEC_1_3, FEC_2_5,
+			FEC_NONE,
+#ifndef TBS_STANDALONE
+			FEC_1_4, FEC_1_3,
+#endif
+			FEC_2_5,
 			FEC_1_2, FEC_3_5, FEC_2_3, FEC_3_4,
 			FEC_4_5, FEC_5_6, FEC_8_9, FEC_9_10,
 			FEC_3_5, FEC_2_3, FEC_3_4, FEC_5_6,
@@ -1590,6 +1594,7 @@ static int read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 	return 0;
 }
 
+#ifndef TBS_STANDALONE
 static void spi_read(struct dvb_frontend *fe, struct ecp3_info *ecp3inf)
 {
 	struct stv *state = fe->demodulator_priv;
@@ -1608,6 +1613,7 @@ static void spi_write(struct dvb_frontend *fe,struct ecp3_info *ecp3inf)
 	state->base->write_properties(adapter,ecp3inf->reg, ecp3inf->data);
 	return ;
 }
+#endif
 
 static struct dvb_frontend_ops stv091x_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2, SYS_DSS },
@@ -1643,8 +1649,10 @@ static struct dvb_frontend_ops stv091x_ops = {
 	.read_snr			= read_snr,
 	.read_ber			= read_ber,
 	.read_ucblocks			= read_ucblocks,
+#ifndef TBS_STANDALONE
 	.spi_read			= spi_read,
 	.spi_write			= spi_write,
+#endif
 };
 
 static struct stv_base *match_base(struct i2c_adapter  *i2c, u8 adr)
