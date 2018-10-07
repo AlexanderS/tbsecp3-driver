@@ -6,6 +6,11 @@ tbsecp3-objs := tbsecp3/tbsecp3-core.o \
                 tbsecp3/tbsecp3-ca.o \
                 tbsecp3/tbsecp3-asi.o
 obj-m += tbsecp3.o
+ccflags-y += -I$(M)/dvb-frontends/
+ccflags-y += -I$(M)/dvb-frontends/stid135/
+ccflags-y += -I$(M)/tuners/
+ccflags-y += -DTBS_STANDALONE
+
 
 tas2101-objs := dvb-frontends/tas2101.o
 ccflags-y += -DCONFIG_DVB_TAS2101
@@ -23,14 +28,6 @@ tas2971-objs := dvb-frontends/tas2971.o
 ccflags-y += -DCONFIG_DVB_TAS2971
 obj-m += tas2971.o
 
-av201x-objs := tuners/av201x.o
-ccflags-y += -DCONFIG_MEDIA_TUNER_AV201X
-obj-m += av201x.o
-
-stv6120-objs := tuners/stv6120.o
-ccflags-y += -DCONFIG_MEDIA_TUNER_STV6120
-obj-m += stv6120.o
-
 stid135-objs := dvb-frontends/stid135/stid135-fe.o \
                 dvb-frontends/stid135/chip.o \
                 dvb-frontends/stid135/stfe_utilities.o \
@@ -47,11 +44,15 @@ mtv23x-objs := dvb-frontends/mtv23x.o
 gx1503-objs := dvb-frontends/gx1503.o
 obj-m += si2168.o si2183.o mn88436.o mtv23x.o gx1503.o
 
+
+av201x-objs := tuners/av201x.o
+ccflags-y += -DCONFIG_MEDIA_TUNER_AV201X
+obj-m += av201x.o
+
+stv6120-objs := tuners/stv6120.o
+ccflags-y += -DCONFIG_MEDIA_TUNER_STV6120
+obj-m += stv6120.o
+
 si2157-objs := tuners/si2157.o
 mxl603-objs := tuners/mxl603.o
 obj-m += si2157.o mxl603.o
-
-ccflags-y += -I$(M)/dvb-frontends/
-ccflags-y += -I$(M)/dvb-frontends/stid135/
-ccflags-y += -I$(M)/tuners/
-ccflags-y += -DTBS_STANDALONE
