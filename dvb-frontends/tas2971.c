@@ -419,12 +419,10 @@ static struct dvb_frontend_ops tas2101_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2 },
 	.info = {
 		.name = "Tmax TAS2101",
-		.frequency_min = 950000,
-		.frequency_max = 2150000,
-		.frequency_stepsize = 1011, /* kHz for QPSK frontends */
-		.frequency_tolerance = 5000,
-		.symbol_rate_min = 1000000,
-		.symbol_rate_max = 45000000,
+		.frequency_min_hz	=  950 * MHz,
+		.frequency_max_hz	= 2150 * MHz,
+		.symbol_rate_min	= 1000000,
+		.symbol_rate_max	= 45000000,
 		.caps = FE_CAN_INVERSION_AUTO |
 			FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
 			FE_CAN_FEC_4_5 | FE_CAN_FEC_5_6 | FE_CAN_FEC_6_7 |
