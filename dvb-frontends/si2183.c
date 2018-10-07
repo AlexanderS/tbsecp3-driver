@@ -73,6 +73,7 @@ struct si2183_dev {
 	u8 ts_mode;
 	bool ts_clock_inv;
 	bool ts_clock_gapped;
+	int start_clk_mode;
 	u8 agc_mode;
 	struct si_base *base;
 	void (*RF_switch)(struct i2c_adapter * i2c,u8 rf_in,u8 flag);
@@ -892,7 +893,12 @@ static int si2183_init(struct dvb_frontend *fe)
 	c->cnr.stat[0].scale = FE_SCALE_DECIBEL;
 
 	/* initialize */
-	memcpy(cmd.args, "\xc0\x12\x00\x0c\x00\x0d\x16\x00\x00\x00\x00\x00\x00", 13);
+	memcpy(cmd.args, "\xc0\x12\x00\x0c\x00\x0d\x16\x00\x00\x00\x00\x00\x00", 13);	
+	if(dev->start_clk_mode == 1){
+	   cmd.args[3] =0;
+	   cmd.args[5] = 0x6;
+	}
+	
 	cmd.wlen = 13;
 	cmd.rlen = 0;
 	ret = si2183_cmd_execute(client, &cmd);
@@ -920,6 +926,9 @@ static int si2183_init(struct dvb_frontend *fe)
 
 	/* power up */
 	memcpy(cmd.args, "\xc0\x06\x01\x0f\x00\x20\x20\x01", 8);
+	if(dev->start_clk_mode ==1 ){
+	   cmd.args[6]	= 0x30;
+	}
 	cmd.wlen = 8;
 	cmd.rlen = 1;
 	ret = si2183_cmd_execute(client, &cmd);
@@ -1218,27 +1227,27 @@ static int si2183_set_property(struct dvb_frontend *fe,
 		case SYS_DVBS:
 		case SYS_DVBS2:
 		case SYS_DSS:
-			fe->ops.info.frequency_min = 950000;
-			fe->ops.info.frequency_max = 2150000;
-			fe->ops.info.frequency_stepsize = 0;
+			fe->ops.info.frequency_min_hz = 950 * MHz;
+			fe->ops.info.frequency_max_hz = 2150 * MHz;
+			fe->ops.info.frequency_stepsize_hz = 0;
 			break;
 		case SYS_ISDBT:
-			fe->ops.info.frequency_min = 42000000;
-			fe->ops.info.frequency_max = 1002000000;
-			fe->ops.info.frequency_stepsize = 0;
+			fe->ops.info.frequency_min_hz = 42 * MHz;
+			fe->ops.info.frequency_max_hz = 1002 * MHz;
+			fe->ops.info.frequency_stepsize_hz = 0;
 			break;
 		case SYS_DVBC_ANNEX_A:
 		case SYS_DVBC_ANNEX_B:
-			fe->ops.info.frequency_min = 47000000;
-			fe->ops.info.frequency_max = 862000000;
-			fe->ops.info.frequency_stepsize = 62500;
+			fe->ops.info.frequency_min_hz = 47 * MHz;
+			fe->ops.info.frequency_max_hz = 862 * MHz;
+			fe->ops.info.frequency_stepsize_hz = 62500;
 			break;
 		case SYS_DVBT:
 		case SYS_DVBT2:
 		default:
-			fe->ops.info.frequency_min = 174000000;
-			fe->ops.info.frequency_max = 862000000;
-			fe->ops.info.frequency_stepsize = 250000;
+			fe->ops.info.frequency_min_hz = 174 * MHz;
+			fe->ops.info.frequency_max_hz = 862 * MHz;
+			fe->ops.info.frequency_stepsize_hz = 250000;
 			break;
 		}
 		break;
@@ -1528,7 +1537,7 @@ static int si2183_probe(struct i2c_client *client,
 	dev->snr = 0;
 	dev->stat_resp = 0;
 	dev->active_fe = 0;
-
+	dev->start_clk_mode = config->start_clk_mode;
 	dev->TS_switch = config->TS_switch;
 	dev->LED_switch = config->LED_switch;
 	

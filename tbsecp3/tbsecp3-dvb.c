@@ -37,6 +37,8 @@
 #include "gx1503.h"
 #include "tas2971.h"
 
+#include "stid135.h"
+
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
 struct sec_priv {
@@ -389,7 +391,7 @@ static int set_mac_address(struct tbsecp3_adapter *adap)
 	struct tbsecp3_dev *dev = adap->dev;
 	u8 eeprom_bus_nr = dev->info->eeprom_i2c;
 	struct i2c_adapter *i2c = &dev->i2c_bus[eeprom_bus_nr].i2c_adap;
-	u8 eep_addr;
+	u8 eep_addr = 0xa0;
 	int ret;
 
 	struct i2c_msg msg[] = {
@@ -401,9 +403,9 @@ static int set_mac_address(struct tbsecp3_adapter *adap)
 
 	if (dev->info->eeprom_addr)
 		eep_addr = dev->info->eeprom_addr;
-	else
-		eep_addr = 0xa0;
+	
 	eep_addr += 0x10 * adap->nr;
+	
 	ret = i2c_transfer(i2c, msg, 2);
 	ret = i2c_transfer(i2c, msg, 2);
 	if (ret != 2) {
@@ -617,6 +619,7 @@ static struct av201x_config tbs6910_av201x_cfg = {
 	.xtal_freq   = 27000,		/* kHz */
 };
 
+
 static int max_set_voltage(struct i2c_adapter *i2c,
 		enum fe_sec_voltage voltage, u8 rf_in)
 {
@@ -718,7 +721,23 @@ static struct av201x_config tbs6522_av201x_cfg[] = {
 	},
 };
 
+static struct stid135_cfg tbs6903x_stid135_cfg = {
+	.adr		= 0x68,
+	.clk		= 27,
+	.ts_mode	= TS_2PAR,
+	.set_voltage	= NULL,
+	.write_properties = ecp3_spi_write, 
+	.read_properties = ecp3_spi_read,
+};
 
+static struct stid135_cfg tbs6909x_stid135_cfg = {
+	.adr		= 0x68,
+	.clk		= 27,
+	.ts_mode	= TS_STFE,
+	.set_voltage	= max_set_voltage,
+	.write_properties = ecp3_spi_write, 
+	.read_properties = ecp3_spi_read,
+};
 
 static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 {
@@ -726,708 +745,756 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 	struct pci_dev *pci = dev->pci_dev;
 
 	struct si2168_config si2168_config;
-    struct si2183_config si2183_config;
-    struct si2157_config si2157_config;
-    struct mn88436_config mn88436_config;
-    struct mxl603_config mxl603_config;
-    struct mtv23x_config mtv23x_config;
-    //struct av201x_config av201x_config;
-    struct gx1503_config gx1503_config;
+	struct si2183_config si2183_config;
+	struct si2157_config si2157_config;
+	struct mn88436_config mn88436_config;
+	struct mxl603_config mxl603_config;
+	struct mtv23x_config mtv23x_config;
+	struct gx1503_config gx1503_config;
 
-    struct i2c_board_info info;
-    struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
-    struct i2c_client *client_demod, *client_tuner;
+	struct i2c_board_info info;
+	struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
+	struct i2c_client *client_demod, *client_tuner;
 
-    adapter->fe = NULL;
-    adapter->fe2 = NULL;
-    adapter->i2c_client_demod = NULL;
-    adapter->i2c_client_tuner = NULL;
+	adapter->fe = NULL;
+	adapter->fe2 = NULL;
+	adapter->i2c_client_demod = NULL;
+	adapter->i2c_client_tuner = NULL;
 
-    if((0x6304 != pci->subsystem_vendor)&&(0x6308 != pci->subsystem_vendor)){
-        reset_demod(adapter);
-        set_mac_address(adapter);
-    }
-    switch (pci->subsystem_vendor) {
-        case 0x6308:
-            adapter->fe = dvb_attach(tas2971_attach, &tbs6308_demod_cfg, i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-		if(adapter->nr <4)
-		{
-			if(tbs6304_read_mac(adapter)==0)
-	    			tbs6304_read_mac(adapter);
+	if((TBSECP3_BOARD_TBS6304 != dev->info->board_id) && (TBSECP3_BOARD_TBS6308 != dev->info->board_id)){
+		reset_demod(adapter);
+		set_mac_address(adapter);
+	}
+
+	switch (dev->info->board_id) {
+		
+	case TBSECP3_BOARD_TBS6904X:
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode =  SI2183_TS_PARALLEL ;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
+		si2183_config.start_clk_mode = 1;
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+
+		info.addr = (adapter->nr %2)? 0x64 : 0x67;
+		 si2183_config.agc_mode = (adapter->nr%2)? 0x4 : 0x5;
+	
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
 		}
+		adapter->i2c_client_demod = client_demod;
+
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBS;
+		adapter->fe->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe->ops.delsys[2] = SYS_DSS;
+		
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6522_av201x_cfg[(adapter->nr%2)],
+			    i2c) == NULL) {
+		    dvb_frontend_detach(adapter->fe);
+		    adapter->fe = NULL;
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+
+
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+
+		break;
+	case TBSECP3_BOARD_TBS6308:
+		adapter->fe = dvb_attach(tas2971_attach, &tbs6308_demod_cfg, i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+		    if(adapter->nr <4)
+		    {
+			    if(tbs6304_read_mac(adapter)==0)
+				    tbs6304_read_mac(adapter);
+		    }
+		    else
+		    {
+			    if(tbs6308_read_mac_ext(adapter)==0)
+				    tbs6308_read_mac_ext(adapter);//try again
+		    }
+		break;
+
+	case TBSECP3_BOARD_TBS6304:
+		adapter->fe = dvb_attach(tas2971_attach, &tbs6304_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+		if(tbs6304_read_mac(adapter)==0)
+		    tbs6304_read_mac(adapter);
+		break;
+
+	case TBSECP3_BOARD_TBS6301:
+		adapter->fe = dvb_attach(tas2971_attach, &tbs6301_demod_cfg, i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		tbs6301_read_mac(adapter);
+		break;
+
+	case TBSECP3_BOARD_TBS690a:
+		adapter->fe = dvb_attach(tas2971_attach, &tbs6904_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		// init asi
+		int regdata;
+		u8 mpbuf[4];
+		mpbuf[0] = adapter->nr; //0--3 select value
+		tbs_write( TBSECP3_GPIO_BASE, 0x34 , *(u32 *)&mpbuf[0]); // select chip : 13*8 =104=0x68 select address
+		//u32 mpbuf = adapter->nr;
+		//tbs_write( TBSECP3_GPIO_BASE, 0x34 , mpbuf); // select chip : 13*8 =104=0x68 select address
+		// ==***********************************************************************
+
+		asi_chip_reset(dev,ASI0_BASEADDRESS);  //asi chip reset;
+
+		mpbuf[0] = 1; //active spi bus from "z"
+		tbs_write( ASI0_BASEADDRESS, ASI_SPI_ENABLE, *(u32 *)&mpbuf[0]);
+
+		regdata = asi_read16bit(dev,ASI0_BASEADDRESS,0x24);
+		asi_write16bit(dev,ASI0_BASEADDRESS,0x24,3);	 
+		regdata = asi_read16bit(dev,ASI0_BASEADDRESS, 0x24);
+
+		mpbuf[0] = 0; //spi disable, enter "z" state;
+		tbs_write( ASI0_BASEADDRESS, ASI_SPI_ENABLE, *(u32 *)&mpbuf[0]);
+
+		//==****************************************************************************************
+		// ~~init asi
+		break;
+
+	case TBSECP3_BOARD_TBS6514:
+		memset(&gx1503_config,0,sizeof(gx1503_config));
+		gx1503_config.i2c_adapter =&i2c;
+		gx1503_config.fe = &adapter->fe;
+		gx1503_config.clk_freq = 30400;//KHZ
+		gx1503_config.ts_mode = 1;
+		gx1503_config.i2c_wr_max = 8;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "gx1503", I2C_NAME_SIZE);
+		info.addr = 0x30;
+		info.platform_data = &gx1503_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c,&info);
+		if(client_demod == NULL||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+
+		adapter->i2c_client_demod = client_demod;
+
+		/*attach tuner*/
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 0;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = 0x60;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+		break;
+
+	case TBSECP3_BOARD_TBS6814:
+		memset(&mtv23x_config, 0, sizeof(mtv23x_config));
+		mtv23x_config.fe = &adapter->fe;
+		mtv23x_config.clk_freq = 32000;
+		mtv23x_config.ts_mode  = 6;
+		mtv23x_config.i2c_wr_max = 32;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "mtv23x", I2C_NAME_SIZE);
+		info.addr = (adapter->nr%2)? 0x44 : 0x43;
+		info.platform_data = &mtv23x_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+		break;
+
+	case TBSECP3_BOARD_TBS6209:
+		/* attach demod */
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode = SI2183_TS_SERIAL;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
+			    si2183_config.read_properties = ecp3_spi_read;
+			    si2183_config.write_properties = ecp3_spi_write;
+			    
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+		info.addr = (adapter->nr%2)? 0x67 : 0x64;
+		si2183_config.agc_mode = (adapter->nr%2)? 0x5 : 0x4;
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* terrestrial tuner */
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBT;
+		adapter->fe->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = (adapter->nr %2)? 0x60 : 0x63;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+		break;
+
+	case TBSECP3_BOARD_TBS6704:
+		/* attach demod */
+		memset(&mn88436_config, 0, sizeof(mn88436_config));
+		mn88436_config.fe = &adapter->fe;
+		mn88436_config.ts_mode = 0;
+		mn88436_config.i2c_wr_max = 32;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "mn88436", I2C_NAME_SIZE);
+		info.addr = 0x18;
+		info.platform_data = &mn88436_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* attach tuner */
+		memset(&mxl603_config, 0, sizeof(mxl603_config));
+		mxl603_config.fe = adapter->fe;
+		mxl603_config.xtalFreqSel= 1; //0:16M ,1:24M
+		mxl603_config.agcType = 0 ; //0:self 1:external
+		mxl603_config.ifOutFreq = MXL603_IF_5MHz;
+		mxl603_config.manualIFFreqSet = false;
+		mxl603_config.manualIFOutFreqInKHz = 0 ;//if manual set ,input the freq
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "mxl603", I2C_NAME_SIZE);
+		info.addr = 0x60;
+		info.platform_data = &mxl603_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+		break;
+
+	case TBSECP3_BOARD_TBS6205:
+	case TBSECP3_BOARD_TBS6281SE:
+		/* attach demod */
+		memset(&si2168_config, 0, sizeof(si2168_config));
+		si2168_config.i2c_adapter = &i2c;
+		si2168_config.fe = &adapter->fe;
+		si2168_config.ts_mode = SI2168_TS_PARALLEL;
+		si2168_config.ts_clock_gapped = true;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2168", I2C_NAME_SIZE);
+		info.addr = 0x64;
+		info.platform_data = &si2168_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = 0x60;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+		break;
+
+	case TBSECP3_BOARD_TBS6290SE:
+		/* attach demod */
+		memset(&si2168_config, 0, sizeof(si2168_config));
+		si2168_config.i2c_adapter = &i2c;
+		si2168_config.fe = &adapter->fe;
+		si2168_config.ts_mode = SI2168_TS_SERIAL;//zc2016/07/20
+		si2168_config.ts_clock_gapped = true;
+		si2168_config.ts_clock_inv=0;//zc2016/07/20
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2168", I2C_NAME_SIZE);
+		info.addr = 0x64;
+		info.platform_data = &si2168_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = 0x60;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+		tbsecp3_ca_init(adapter, adapter->nr);
+		break;
+
+	case TBSECP3_BOARD_TBS6522:
+		/* attach demod */
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode = SI2183_TS_PARALLEL;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = NULL;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+		info.addr = adapter->nr ? 0x64 : 0x67;
+		si2183_config.agc_mode = adapter->nr? 0x4 : 0x5;
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* dvb core doesn't support 2 tuners for 1 demod so
+		  we split the adapter in 2 frontends */
+		adapter->fe2 = &adapter->_fe2;
+		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
+
+
+		/* terrestrial tuner */
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBT;
+		adapter->fe->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		info.addr = adapter->nr ? 0x61 : 0x60;
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_tuner = client_tuner;
+
+
+		/* sattelite tuner */
+		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe2->ops.delsys[0] = SYS_DVBS;
+		adapter->fe2->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe2->ops.delsys[2] = SYS_DSS;
+		adapter->fe2->id = 1;
+		if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
+			    i2c) == NULL) {
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+		break;
+
+	case TBSECP3_BOARD_TBS6528:
+	case TBSECP3_BOARD_TBS6590:
+		/* attach demod */
+		memset(&si2183_config, 0, sizeof(si2183_config));
+		si2183_config.i2c_adapter = &i2c;
+		si2183_config.fe = &adapter->fe;
+		si2183_config.ts_mode = pci->subsystem_vendor==0x6528 ? SI2183_TS_PARALLEL : SI2183_TS_SERIAL;
+		si2183_config.ts_clock_gapped = true;
+		si2183_config.rf_in = adapter->nr;
+		si2183_config.RF_switch = RF_switch;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
+		if(pci->subsystem_vendor==0x6528)
+		{
+		    info.addr = 0x67;
+		    si2183_config.agc_mode = 0x5 ;
+		}
+		else{
+		    info.addr = adapter->nr ? 0x67 : 0x64;
+		    si2183_config.agc_mode = adapter->nr? 0x5 : 0x4;
+		}
+		info.platform_data = &si2183_config;
+		request_module(info.type);
+		client_demod = i2c_new_device(i2c, &info);
+		if (client_demod == NULL ||
+			client_demod->dev.driver == NULL)
+		    goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+		    i2c_unregister_device(client_demod);
+		    goto frontend_atach_fail;
+		}
+		adapter->i2c_client_demod = client_demod;
+
+		/* dvb core doesn't support 2 tuners for 1 demod so
+		  we split the adapter in 2 frontends */
+		adapter->fe2 = &adapter->_fe2;
+		memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
+
+
+		/* terrestrial tuner */
+		memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe->ops.delsys[0] = SYS_DVBT;
+		adapter->fe->ops.delsys[1] = SYS_DVBT2;
+		adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
+		adapter->fe->ops.delsys[3] = SYS_ISDBT;
+		adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
+
+		/* attach tuner */
+		memset(&si2157_config, 0, sizeof(si2157_config));
+		si2157_config.fe = adapter->fe;
+		si2157_config.if_port = 1;
+
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "si2157", I2C_NAME_SIZE);
+		if(pci->subsystem_vendor==0x6528)info.addr = 0x61;
 		else
-		{
-			if(tbs6308_read_mac_ext(adapter)==0)
-				tbs6308_read_mac_ext(adapter);//try again
+		    info.addr = adapter->nr ? 0x61 : 0x60;
+
+		info.platform_data = &si2157_config;
+		request_module(info.type);
+		client_tuner = i2c_new_device(i2c, &info);
+		if (client_tuner == NULL ||
+			client_tuner->dev.driver == NULL)
+		    goto frontend_atach_fail;
+
+		if (!try_module_get(client_tuner->dev.driver->owner)) {
+		    i2c_unregister_device(client_tuner);
+		    goto frontend_atach_fail;
 		}
-            break;
-        case 0x6304:
-            adapter->fe = dvb_attach(tas2971_attach, &tbs6304_demod_cfg[adapter->nr], i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-	    if(tbs6304_read_mac(adapter)==0)
-	    	tbs6304_read_mac(adapter);
-            break;
-        case 0x6301:
-            adapter->fe = dvb_attach(tas2971_attach, &tbs6301_demod_cfg, i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            tbs6301_read_mac(adapter);
-            break;
-
-        case 0x690a:
-            adapter->fe = dvb_attach(tas2971_attach, &tbs6904_demod_cfg[adapter->nr], i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            // init asi
-            int regdata;
-            u8 mpbuf[4];
-            mpbuf[0] = adapter->nr; //0--3 select value
-            tbs_write( TBSECP3_GPIO_BASE, 0x34 , *(u32 *)&mpbuf[0]); // select chip : 13*8 =104=0x68 select address
-            //u32 mpbuf = adapter->nr;
-            //tbs_write( TBSECP3_GPIO_BASE, 0x34 , mpbuf); // select chip : 13*8 =104=0x68 select address
-            // ==***********************************************************************
-
-            asi_chip_reset(dev,ASI0_BASEADDRESS);  //asi chip reset;
-
-            mpbuf[0] = 1; //active spi bus from "z"
-            tbs_write( ASI0_BASEADDRESS, ASI_SPI_ENABLE, *(u32 *)&mpbuf[0]);
-
-            regdata = asi_read16bit(dev,ASI0_BASEADDRESS,0x24);
-            asi_write16bit(dev,ASI0_BASEADDRESS,0x24,3);	 
-            regdata = asi_read16bit(dev,ASI0_BASEADDRESS, 0x24);
-
-            mpbuf[0] = 0; //spi disable, enter "z" state;
-            tbs_write( ASI0_BASEADDRESS, ASI_SPI_ENABLE, *(u32 *)&mpbuf[0]);
-
-            //==****************************************************************************************
-            // ~~init asi
-            break;
-        case 0x6514:
-            memset(&gx1503_config,0,sizeof(gx1503_config));
-            gx1503_config.i2c_adapter =&i2c;
-            gx1503_config.fe = &adapter->fe;
-            gx1503_config.clk_freq = 30400;//KHZ
-            gx1503_config.ts_mode = 1;
-            gx1503_config.i2c_wr_max = 8;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "gx1503", I2C_NAME_SIZE);
-            info.addr = 0x30;
-            info.platform_data = &gx1503_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c,&info);
-            if(client_demod == NULL||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-
-            adapter->i2c_client_demod = client_demod;
-
-            /*attach tuner*/
-            memset(&si2157_config, 0, sizeof(si2157_config));
-            si2157_config.fe = adapter->fe;
-            si2157_config.if_port = 0;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-            info.addr = 0x60;
-            info.platform_data = &si2157_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-            break;
-        case 0x6814:
-            memset(&mtv23x_config, 0, sizeof(mtv23x_config));
-            mtv23x_config.fe = &adapter->fe;
-            mtv23x_config.clk_freq = 32000;
-            mtv23x_config.ts_mode  = 6;
-            mtv23x_config.i2c_wr_max = 32;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "mtv23x", I2C_NAME_SIZE);
-            info.addr = (adapter->nr%2)? 0x44 : 0x43;
-            info.platform_data = &mtv23x_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-            break;
-        case 0x6209:
-            /* attach demod */
-            memset(&si2183_config, 0, sizeof(si2183_config));
-            si2183_config.i2c_adapter = &i2c;
-            si2183_config.fe = &adapter->fe;
-            si2183_config.ts_mode = SI2183_TS_SERIAL;
-            si2183_config.ts_clock_gapped = true;
-            si2183_config.rf_in = adapter->nr;
-            si2183_config.RF_switch = NULL;
-			si2183_config.read_properties = ecp3_spi_read;
-			si2183_config.write_properties = ecp3_spi_write;
-			
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2183", I2C_NAME_SIZE);
-            info.addr = (adapter->nr%2)? 0x67 : 0x64;
-            si2183_config.agc_mode = (adapter->nr%2)? 0x5 : 0x4;
-            info.platform_data = &si2183_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-
-            /* terrestrial tuner */
-            memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
-            adapter->fe->ops.delsys[0] = SYS_DVBT;
-            adapter->fe->ops.delsys[1] = SYS_DVBT2;
-            adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
-            adapter->fe->ops.delsys[3] = SYS_ISDBT;
-            adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
-
-            /* attach tuner */
-            memset(&si2157_config, 0, sizeof(si2157_config));
-            si2157_config.fe = adapter->fe;
-            si2157_config.if_port = 1;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-            info.addr = (adapter->nr %2)? 0x60 : 0x63;
-            info.platform_data = &si2157_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-            break;
-        case 0x6704:
-            /* attach demod */
-            memset(&mn88436_config, 0, sizeof(mn88436_config));
-            mn88436_config.fe = &adapter->fe;
-            mn88436_config.ts_mode = 0;
-            mn88436_config.i2c_wr_max = 32;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "mn88436", I2C_NAME_SIZE);
-            info.addr = 0x18;
-            info.platform_data = &mn88436_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-
-            /* attach tuner */
-            memset(&mxl603_config, 0, sizeof(mxl603_config));
-            mxl603_config.fe = adapter->fe;
-            mxl603_config.xtalFreqSel= 1; //0:16M ,1:24M
-            mxl603_config.agcType = 0 ; //0:self 1:external
-            mxl603_config.ifOutFreq = MXL603_IF_5MHz;
-            mxl603_config.manualIFFreqSet = false;
-            mxl603_config.manualIFOutFreqInKHz = 0 ;//if manual set ,input the freq
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "mxl603", I2C_NAME_SIZE);
-            info.addr = 0x60;
-            info.platform_data = &mxl603_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-
-            break;
-        case 0x6205:
-        case 0x6281:
-            /* attach demod */
-            memset(&si2168_config, 0, sizeof(si2168_config));
-            si2168_config.i2c_adapter = &i2c;
-            si2168_config.fe = &adapter->fe;
-            si2168_config.ts_mode = SI2168_TS_PARALLEL;
-            si2168_config.ts_clock_gapped = true;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2168", I2C_NAME_SIZE);
-            info.addr = 0x64;
-            info.platform_data = &si2168_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-
-            /* attach tuner */
-            memset(&si2157_config, 0, sizeof(si2157_config));
-            si2157_config.fe = adapter->fe;
-            si2157_config.if_port = 1;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-            info.addr = 0x60;
-            info.platform_data = &si2157_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-            break;
-        case 0x6290:
-            /* attach demod */
-            memset(&si2168_config, 0, sizeof(si2168_config));
-            si2168_config.i2c_adapter = &i2c;
-            si2168_config.fe = &adapter->fe;
-            si2168_config.ts_mode = SI2168_TS_SERIAL;//zc2016/07/20
-            si2168_config.ts_clock_gapped = true;
-            si2168_config.ts_clock_inv=0;//zc2016/07/20
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2168", I2C_NAME_SIZE);
-            info.addr = 0x64;
-            info.platform_data = &si2168_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-
-            /* attach tuner */
-            memset(&si2157_config, 0, sizeof(si2157_config));
-            si2157_config.fe = adapter->fe;
-            si2157_config.if_port = 1;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-            info.addr = 0x60;
-            info.platform_data = &si2157_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-            tbsecp3_ca_init(adapter, adapter->nr);
-            break;
-        case 0x6522:
-            /* attach demod */
-            memset(&si2183_config, 0, sizeof(si2183_config));
-            si2183_config.i2c_adapter = &i2c;
-            si2183_config.fe = &adapter->fe;
-            si2183_config.ts_mode = SI2183_TS_PARALLEL;
-            si2183_config.ts_clock_gapped = true;
-            si2183_config.rf_in = adapter->nr;
-            si2183_config.RF_switch = NULL;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2183", I2C_NAME_SIZE);
-            info.addr = adapter->nr ? 0x64 : 0x67;
-            si2183_config.agc_mode = adapter->nr? 0x4 : 0x5;
-            info.platform_data = &si2183_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-
-
-
-            /* dvb core doesn't support 2 tuners for 1 demod so
-               we split the adapter in 2 frontends */
-            adapter->fe2 = &adapter->_fe2;
-            memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
-
-
-            /* terrestrial tuner */
-            memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
-            adapter->fe->ops.delsys[0] = SYS_DVBT;
-            adapter->fe->ops.delsys[1] = SYS_DVBT2;
-            adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
-            adapter->fe->ops.delsys[3] = SYS_ISDBT;
-            adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
-
-            /* attach tuner */
-            memset(&si2157_config, 0, sizeof(si2157_config));
-            si2157_config.fe = adapter->fe;
-            si2157_config.if_port = 1;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-            info.addr = adapter->nr ? 0x61 : 0x60;
-            info.platform_data = &si2157_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-
-
-            /* sattelite tuner */
-            memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
-            adapter->fe2->ops.delsys[0] = SYS_DVBS;
-            adapter->fe2->ops.delsys[1] = SYS_DVBS2;
-            adapter->fe2->ops.delsys[2] = SYS_DSS;
-            adapter->fe2->id = 1;
-            if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
-                        i2c) == NULL) {
-                dev_err(&dev->pci_dev->dev,
-                        "frontend %d tuner attach failed\n",
-                        adapter->nr);
-                goto frontend_atach_fail;
-            }
-            if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-
-            break;
-        case 0x6528:
-        case 0x6590:
-            /* attach demod */
-            memset(&si2183_config, 0, sizeof(si2183_config));
-            si2183_config.i2c_adapter = &i2c;
-            si2183_config.fe = &adapter->fe;
-            si2183_config.ts_mode = pci->subsystem_vendor==0x6528 ? SI2183_TS_PARALLEL : SI2183_TS_SERIAL;
-            si2183_config.ts_clock_gapped = true;
-            si2183_config.rf_in = adapter->nr;
-            si2183_config.RF_switch = RF_switch;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2183", I2C_NAME_SIZE);
-            if(pci->subsystem_vendor==0x6528)
-            {
-                info.addr = 0x67;
-                si2183_config.agc_mode = 0x5 ;
-            }
-            else{
-                info.addr = adapter->nr ? 0x67 : 0x64;
-                si2183_config.agc_mode = adapter->nr? 0x5 : 0x4;
-            }
-            info.platform_data = &si2183_config;
-            request_module(info.type);
-            client_demod = i2c_new_device(i2c, &info);
-            if (client_demod == NULL ||
-                    client_demod->dev.driver == NULL)
-                goto frontend_atach_fail;
-            if (!try_module_get(client_demod->dev.driver->owner)) {
-                i2c_unregister_device(client_demod);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_demod = client_demod;
-
-
-
-            /* dvb core doesn't support 2 tuners for 1 demod so
-               we split the adapter in 2 frontends */
-            adapter->fe2 = &adapter->_fe2;
-            memcpy(adapter->fe2, adapter->fe, sizeof(struct dvb_frontend));
-
-
-            /* terrestrial tuner */
-            memset(adapter->fe->ops.delsys, 0, MAX_DELSYS);
-            adapter->fe->ops.delsys[0] = SYS_DVBT;
-            adapter->fe->ops.delsys[1] = SYS_DVBT2;
-            adapter->fe->ops.delsys[2] = SYS_DVBC_ANNEX_A;
-            adapter->fe->ops.delsys[3] = SYS_ISDBT;
-            adapter->fe->ops.delsys[4] = SYS_DVBC_ANNEX_B;
-
-            /* attach tuner */
-            memset(&si2157_config, 0, sizeof(si2157_config));
-            si2157_config.fe = adapter->fe;
-            si2157_config.if_port = 1;
-
-            memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "si2157", I2C_NAME_SIZE);
-            if(pci->subsystem_vendor==0x6528)info.addr = 0x61;
-            else
-                info.addr = adapter->nr ? 0x61 : 0x60;
-
-            info.platform_data = &si2157_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL)
-                goto frontend_atach_fail;
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-
-
-            /* sattelite tuner */
-            memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
-            adapter->fe2->ops.delsys[0] = SYS_DVBS;
-            adapter->fe2->ops.delsys[1] = SYS_DVBS2;
-            adapter->fe2->ops.delsys[2] = SYS_DSS;
-            adapter->fe2->id = 1;
-            if(pci->subsystem_vendor==0x6528)
-            {
-                if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[1],
-                            i2c) == NULL) {
-                    dev_err(&dev->pci_dev->dev,
-                            "frontend %d tuner attach failed\n",
-                            adapter->nr);
-                    goto frontend_atach_fail;
-                }
-            }
-            else{
-                if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
-                            i2c) == NULL) {
-                    dev_err(&dev->pci_dev->dev,
-                            "frontend %d tuner attach failed\n",
-                            adapter->nr);
-                    goto frontend_atach_fail;
-                }
-            }
-            if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-
-            tbsecp3_ca_init(adapter, adapter->nr);
-
-            break;
-
-        case 0x6902:
-            adapter->fe = dvb_attach(tas2101_attach, &tbs6902_demod_cfg[adapter->nr], i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            if (dvb_attach(av201x_attach, adapter->fe, &tbs6902_av201x_cfg,
-                        tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
-                dvb_frontend_detach(adapter->fe);
-                adapter->fe = NULL;
-                dev_err(&dev->pci_dev->dev,
-                        "frontend %d tuner attach failed\n",
-                        adapter->nr);
-                goto frontend_atach_fail;
-            }
-
-            if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-            break;
-        case 0x6903:
-        case 0x6905:
-        case 0x6908:
-            adapter->fe = dvb_attach(stv091x_attach, i2c,
-                    &tbs6903_stv0910_cfg, adapter->nr & 1);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            if (dvb_attach(stv6120_attach, adapter->fe, i2c, &tbs6903_stv6120_cfg, 1 - (adapter->nr & 1)) == NULL) {
-                dvb_frontend_detach(adapter->fe);
-                adapter->fe = NULL;
-                dev_err(&dev->pci_dev->dev,
-                        "frontend %d tuner attach failed\n",
-                        adapter->nr);
-                goto frontend_atach_fail;
-            }
-            if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-
-            break;
-        case 0x6904:
-            adapter->fe = dvb_attach(tas2101_attach, &tbs6904_demod_cfg[adapter->nr], i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            if (dvb_attach(av201x_attach, adapter->fe, &tbs6904_av201x_cfg,
-                        tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
-                dvb_frontend_detach(adapter->fe);
-                adapter->fe = NULL;
-                dev_err(&dev->pci_dev->dev,
-                        "frontend %d tuner attach failed\n",
-                        adapter->nr);
-                goto frontend_atach_fail;
-            }
-
-            if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-#if 0
-            /* attach tuner */
-            memset(&av201x_config, 0, sizeof(av201x_config));
-            av201x_config.fe = adapter->fe;
-            av201x_config.xtal_freq = 27000,
-
-                memset(&info, 0, sizeof(struct i2c_board_info));
-            strlcpy(info.type, "av2012", I2C_NAME_SIZE);
-            info.addr = 0x63;
-            info.platform_data = &av201x_config;
-            request_module(info.type);
-            client_tuner = i2c_new_device(i2c, &info);
-            printk("cli_tu=%p\n", client_tuner);
-            if (client_tuner != NULL)
-                printk("cli_tu.drv=%p\n", client_tuner->dev.driver);
-            if (client_tuner == NULL ||
-                    client_tuner->dev.driver == NULL) {
-                printk("client tunner fail 1\n");
-                goto frontend_atach_fail;
-            }
-
-            if (!try_module_get(client_tuner->dev.driver->owner)) {
-                i2c_unregister_device(client_tuner);
-                printk("client tunner fail 2\n");
-                goto frontend_atach_fail;
-            }
-            adapter->i2c_client_tuner = client_tuner;
-#endif
-            break;
-        case 0x6909:
-            /*
-               tmp = tbs_read(TBS_GPIO_BASE, 0x20);
-               printk("RD 0x20 = %x\n", tmp);
-               tbs_write(TBS_GPIO_BASE, 0x20, tmp & 0xfffe);
-               tmp = tbs_read(TBS_GPIO_BASE, 0x20);
-               printk("RD 0x20 = %x\n", tmp);
-
-               tmp = tbs_read(TBS_GPIO_BASE, 0x24);
-               printk("RD 0x24 = %x\n", tmp);
-               tbs_write(TBS_GPIO_BASE, 0x24, tmp & 0xfffc);
-               tmp = tbs_read(TBS_GPIO_BASE, 0x24);
-               printk("RD 0x24 = %x\n", tmp);
-               */
-
-            adapter->fe = dvb_attach(mxl58x_attach, i2c,
-                    &tbs6909_mxl58x_cfg, adapter->nr);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            //	adapter->fe->ops.diseqc_send_master_cmd = max_send_master_cmd;
-            //	adapter->fe->ops.diseqc_send_burst = max_send_burst;
-
-            if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-
-            break;
-
-        case 0x6910:
-            adapter->fe = dvb_attach(tas2101_attach, &tbs6910_demod_cfg[adapter->nr], i2c);
-            if (adapter->fe == NULL)
-                goto frontend_atach_fail;
-
-            if (dvb_attach(av201x_attach, adapter->fe, &tbs6910_av201x_cfg,
-                        tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
-                dvb_frontend_detach(adapter->fe);
-                adapter->fe = NULL;
-                dev_err(&dev->pci_dev->dev,
-                        "frontend %d tuner attach failed\n",
-                        adapter->nr);
-                goto frontend_atach_fail;
-            }
-            if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
-                dev_warn(&dev->pci_dev->dev,
-                        "error attaching lnb control on adapter %d\n",
-                        adapter->nr);
-            }
-
-            tbsecp3_ca_init(adapter, adapter->nr);
-            break;
-        default:
-            dev_warn(&dev->pci_dev->dev, "unknonw card\n");
-            return -ENODEV;
-            break;
-    }
-    strlcpy(adapter->fe->ops.info.name,tbsecp3_boards[pci->subsystem_vendor].name,52);
-    return 0;
+		adapter->i2c_client_tuner = client_tuner;
+
+
+		/* sattelite tuner */
+		memset(adapter->fe2->ops.delsys, 0, MAX_DELSYS);
+		adapter->fe2->ops.delsys[0] = SYS_DVBS;
+		adapter->fe2->ops.delsys[1] = SYS_DVBS2;
+		adapter->fe2->ops.delsys[2] = SYS_DSS;
+		adapter->fe2->id = 1;
+		if(pci->subsystem_vendor==0x6528)
+		{
+		    if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[1],
+				i2c) == NULL) {
+			dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		    }
+		}
+		else{
+		    if (dvb_attach(av201x_attach, adapter->fe2, &tbs6522_av201x_cfg[adapter->nr],
+				i2c) == NULL) {
+			dev_err(&dev->pci_dev->dev,
+				"frontend %d tuner attach failed\n",
+				adapter->nr);
+			goto frontend_atach_fail;
+		    }
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe2) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+
+		tbsecp3_ca_init(adapter, adapter->nr);
+		break;
+
+	case TBSECP3_BOARD_TBS6902:
+		adapter->fe = dvb_attach(tas2101_attach, &tbs6902_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6902_av201x_cfg,
+			    tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
+		    dvb_frontend_detach(adapter->fe);
+		    adapter->fe = NULL;
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+		break;
+
+	case TBSECP3_BOARD_TBS6903:
+	case TBSECP3_BOARD_TBS6905:
+	case TBSECP3_BOARD_TBS6908:
+		adapter->fe = dvb_attach(stv091x_attach, i2c,
+			&tbs6903_stv0910_cfg, adapter->nr & 1);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		if (dvb_attach(stv6120_attach, adapter->fe, i2c, &tbs6903_stv6120_cfg, 1 - (adapter->nr & 1)) == NULL) {
+		    dvb_frontend_detach(adapter->fe);
+		    adapter->fe = NULL;
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+		break;
+
+	case TBSECP3_BOARD_TBS6904:
+		adapter->fe = dvb_attach(tas2101_attach, &tbs6904_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6904_av201x_cfg,
+			    tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
+		    dvb_frontend_detach(adapter->fe);
+		    adapter->fe = NULL;
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+	    break;
+
+	case TBSECP3_BOARD_TBS6909:
+		/*
+		  tmp = tbs_read(TBS_GPIO_BASE, 0x20);
+		  printk("RD 0x20 = %x\n", tmp);
+		  tbs_write(TBS_GPIO_BASE, 0x20, tmp & 0xfffe);
+		  tmp = tbs_read(TBS_GPIO_BASE, 0x20);
+		  printk("RD 0x20 = %x\n", tmp);
+
+		  tmp = tbs_read(TBS_GPIO_BASE, 0x24);
+		  printk("RD 0x24 = %x\n", tmp);
+		  tbs_write(TBS_GPIO_BASE, 0x24, tmp & 0xfffc);
+		  tmp = tbs_read(TBS_GPIO_BASE, 0x24);
+		  printk("RD 0x24 = %x\n", tmp);
+		  */
+
+		adapter->fe = dvb_attach(mxl58x_attach, i2c,
+			&tbs6909_mxl58x_cfg, adapter->nr);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		//	adapter->fe->ops.diseqc_send_master_cmd = max_send_master_cmd;
+		//	adapter->fe->ops.diseqc_send_burst = max_send_burst;
+
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+		break;
+
+	case TBSECP3_BOARD_TBS6910:
+		adapter->fe = dvb_attach(tas2101_attach, &tbs6910_demod_cfg[adapter->nr], i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+
+		if (dvb_attach(av201x_attach, adapter->fe, &tbs6910_av201x_cfg,
+			    tas2101_get_i2c_adapter(adapter->fe, 2)) == NULL) {
+		    dvb_frontend_detach(adapter->fe);
+		    adapter->fe = NULL;
+		    dev_err(&dev->pci_dev->dev,
+			    "frontend %d tuner attach failed\n",
+			    adapter->nr);
+		    goto frontend_atach_fail;
+		}
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+		    dev_warn(&dev->pci_dev->dev,
+			    "error attaching lnb control on adapter %d\n",
+			    adapter->nr);
+		}
+
+		tbsecp3_ca_init(adapter, adapter->nr);
+		break;
+
+	case TBSECP3_BOARD_TBS6909X:
+		adapter->fe = dvb_attach(stid135_attach, i2c,
+				&tbs6909x_stid135_cfg, adapter->nr, adapter->nr/2);
+		if (adapter->fe == NULL)
+			goto frontend_atach_fail;
+		break;
+
+	case TBSECP3_BOARD_TBS6903X:
+		adapter->fe = dvb_attach(stid135_attach, i2c,
+				&tbs6903x_stid135_cfg, adapter->nr ? 2 : 0, adapter->nr ? 3 : 0);
+		if (adapter->fe == NULL)
+			goto frontend_atach_fail;
+
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+			dev_warn(&dev->pci_dev->dev,
+				"error attaching lnb control on adapter %d\n",
+				adapter->nr);
+		}
+		break;
+
+	default:
+		dev_warn(&dev->pci_dev->dev, "unknonw card\n");
+		return -ENODEV;
+		break;
+	}
+	strlcpy(adapter->fe->ops.info.name,dev->info->name,52);
+	return 0;
 
 frontend_atach_fail:
-    tbsecp3_i2c_remove_clients(adapter);
-    if (adapter->fe != NULL)
-        dvb_frontend_detach(adapter->fe);
-    adapter->fe = NULL;
-    dev_err(&dev->pci_dev->dev, "TBSECP3 frontend %d attach failed\n",
-            adapter->nr);
+	tbsecp3_i2c_remove_clients(adapter);
+	if (adapter->fe != NULL)
+	    dvb_frontend_detach(adapter->fe);
+	adapter->fe = NULL;
+	dev_err(&dev->pci_dev->dev, "TBSECP3 frontend %d attach failed\n",
+		adapter->nr);
 
-    return -ENODEV;
+	return -ENODEV;
 }
 
 int tbsecp3_dvb_init(struct tbsecp3_adapter *adapter)

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0
+
+config DVB_STID135
+	tristate "STiD135 tuner + demodulator"
+	depends on DVB_CORE && I2C
+	default m if !MEDIA_SUBDRV_AUTOSELECT
+	help
+	  Say Y when you want to support this frontend.

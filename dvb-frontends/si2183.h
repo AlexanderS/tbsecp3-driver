@@ -41,6 +41,8 @@ struct si2183_config {
 	/* TS clock inverted */
 	bool ts_clock_inv;
 
+	int  start_clk_mode;  //0 terrestrial mode 1: satellite mode
+	
 	/* TS clock gapped */
 	bool ts_clock_gapped;
 	/*agc*/
