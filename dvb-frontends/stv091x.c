@@ -1207,8 +1207,11 @@ static int get_frontend(struct dvb_frontend *fe, struct dtv_frontend_properties 
 		};
 		enum fe_code_rate modcod2fec[0x20] = {
 			FEC_NONE,
-#ifndef TBS_STANDALONE
-			FEC_1_4, FEC_1_3,
+#ifdef FEC_1_4
+			FEC_1_4,
+#endif
+#ifdef FEC_1_3
+			FEC_1_3,
 #endif
 			FEC_2_5,
 			FEC_1_2, FEC_3_5, FEC_2_3, FEC_3_4,

@@ -376,45 +376,67 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 	case FE_SAT_MOD_16APSK:
 		p->modulation = APSK_16;
 		break;
+#ifdef APSK_64
 	case FE_SAT_MOD_64APSK:
 		p->modulation = APSK_64;
 		break;
+#endif
+#ifdef APSK_128
 	case FE_SAT_MOD_128APSK:
 		p->modulation = APSK_128;
 		break;
+#endif
+#ifdef APSK_256
 	case FE_SAT_MOD_256APSK:
 		p->modulation = APSK_256;
 		break;
+#endif
+#ifdef APSK_1024
 	case FE_SAT_MOD_1024APSK:
 		p->modulation = APSK_1024;
 		break;
+#endif
+#ifdef APSK_8L
 	case FE_SAT_MOD_8PSK_L:
 		p->modulation = APSK_8L;
 		break;
+#endif
+#ifdef APSK_16L
 	case FE_SAT_MOD_16APSK_L:
 		p->modulation = APSK_16L;
 		break;
+#endif
+#ifdef APSK_64L
 	case FE_SAT_MOD_64APSK_L:
 		p->modulation = APSK_64L;
 		break;
+#endif
+#ifdef APSK_256L
 	case FE_SAT_MOD_256APSK_L:
 		p->modulation = APSK_256L;
 		break;
+#endif
 	case FE_SAT_MOD_QPSK:
 	default:
 		p->modulation = QPSK;
     	}
 
     	switch (state->signal_info.roll_off) {
+#ifdef ROLLOFF_5
 	  case FE_SAT_05:
 		p->rolloff = ROLLOFF_5;
 		break;
+#endif
+#ifdef ROLLOFF_10
 	  case FE_SAT_10:
 		p->rolloff = ROLLOFF_10;
 		break;
+#endif
+#ifdef ROLLOFF_15
 	  case FE_SAT_15:
 		p->rolloff = ROLLOFF_15;
 		break;
+#endif
 	  case FE_SAT_20:
 		p->rolloff = ROLLOFF_20;
 		break;
@@ -431,7 +453,14 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 	p->inversion = state->signal_info.spectrum == FE_SAT_IQ_SWAPPED ? INVERSION_ON : INVERSION_OFF;
 	if (p->delivery_system == SYS_DVBS2) {
 		enum fe_code_rate modcod2fec[0x20] = {
-			FEC_NONE, FEC_1_4, FEC_1_3, FEC_2_5,
+			FEC_NONE,
+#ifdef FEC_1_4
+			FEC_1_4,
+#endif
+#ifdef FEC_1_3
+			FEC_1_3,
+#endif
+			FEC_2_5,
 			FEC_1_2, FEC_3_5, FEC_2_3, FEC_3_4,
 			FEC_4_5, FEC_5_6, FEC_8_9, FEC_9_10,
 			FEC_3_5, FEC_2_3, FEC_3_4, FEC_5_6,
