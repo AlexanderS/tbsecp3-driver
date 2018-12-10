@@ -145,6 +145,7 @@ static void tbsecp3_i2c_unregister(struct tbsecp3_i2c *bus)
 
 void tbsecp3_i2c_remove_clients(struct tbsecp3_adapter *adapter)
 {
+#if 0
 	struct i2c_client *client_demod, *client_tuner;
 
 	/* remove tuner I2C client */
@@ -162,6 +163,7 @@ void tbsecp3_i2c_remove_clients(struct tbsecp3_adapter *adapter)
 		i2c_unregister_device(client_demod);
 		adapter->i2c_client_demod = NULL;
 	}
+#endif
 }
 
 void tbsecp3_i2c_reg_init(struct tbsecp3_dev *dev)

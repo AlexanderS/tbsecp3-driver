@@ -777,6 +777,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2183_config.rf_in = adapter->nr;
 		si2183_config.RF_switch = NULL;
 		si2183_config.start_clk_mode = 1;
+		si2183_config.read_properties = ecp3_spi_read;
+		si2183_config.write_properties = ecp3_spi_write;
 		memset(&info, 0, sizeof(struct i2c_board_info));
 		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
 
@@ -959,8 +961,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2183_config.ts_clock_gapped = true;
 		si2183_config.rf_in = adapter->nr;
 		si2183_config.RF_switch = NULL;
-			    si2183_config.read_properties = ecp3_spi_read;
-			    si2183_config.write_properties = ecp3_spi_write;
+		si2183_config.read_properties = ecp3_spi_read;
+		si2183_config.write_properties = ecp3_spi_write;
 			    
 		memset(&info, 0, sizeof(struct i2c_board_info));
 		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
@@ -1158,6 +1160,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2183_config.ts_clock_gapped = true;
 		si2183_config.rf_in = adapter->nr;
 		si2183_config.RF_switch = NULL;
+		si2183_config.read_properties = ecp3_spi_read;
+		si2183_config.write_properties = ecp3_spi_write;
 
 		memset(&info, 0, sizeof(struct i2c_board_info));
 		strlcpy(info.type, "si2183", I2C_NAME_SIZE);
@@ -1241,6 +1245,8 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 		si2183_config.ts_clock_gapped = true;
 		si2183_config.rf_in = adapter->nr;
 		si2183_config.RF_switch = RF_switch;
+		si2183_config.read_properties = ecp3_spi_read;
+		si2183_config.write_properties = ecp3_spi_write;
 
 		memset(&info, 0, sizeof(struct i2c_board_info));
 		strlcpy(info.type, "si2183", I2C_NAME_SIZE);

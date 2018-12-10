@@ -329,6 +329,10 @@ static int si2168_set_frontend(struct dvb_frontend *fe)
 	switch (c->delivery_system) {
 	case SYS_DVBC_ANNEX_B:
 		delivery_system = 0x10;
+		if( c->modulation==QAM_256)
+			 c->symbol_rate=5361000;
+		if( c->modulation==QAM_64)
+			 c->symbol_rate=5057000;	
 		break;
 	case SYS_DVBT:
 		delivery_system = 0x20;
