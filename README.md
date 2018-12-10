@@ -52,6 +52,8 @@ there are two major problems with the upstream drivers:
   `spi_read` and `spi_write` with the modules from this repository. But this
   should no be required for normal operation.
 
+* Some files are missing an include of `linux/version.h`.
+
 ## Build
 
 To build the modules just execute:

@@ -24,6 +24,7 @@
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/i2c-mux.h>
+#include <linux/version.h>
 
 #include <media/dvb_frontend.h>
 

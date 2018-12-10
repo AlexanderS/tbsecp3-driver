@@ -21,6 +21,8 @@
 #ifndef TAS2101_PRIV_H
 #define TAS2101_PRIV_H
 
+#include <linux/version.h>
+
 struct tas2101_priv {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
 	struct i2c_mux_core *muxc;

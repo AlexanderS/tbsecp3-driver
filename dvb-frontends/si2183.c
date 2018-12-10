@@ -16,6 +16,7 @@
 #include <media/dvb_frontend.h>
 #include <linux/firmware.h>
 #include <linux/i2c-mux.h>
+#include <linux/version.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0)
 #define SI2183_USE_I2C_MUX

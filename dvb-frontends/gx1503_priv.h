@@ -6,6 +6,7 @@
 #include <linux/firmware.h>
 #include <linux/i2c-mux.h>
 #include <linux/regmap.h>
+#include <linux/version.h>
 
 #define GX1503_FIRMWARE "dvb-demod-gx1503B.fw"
 
