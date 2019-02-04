@@ -9,7 +9,7 @@ obj-m += tbsecp3.o
 ccflags-y += -I$(M)/dvb-frontends/
 ccflags-y += -I$(M)/dvb-frontends/stid135/
 ccflags-y += -I$(M)/tuners/
-ccflags-y += -I$(KDIR)
+ccflags-y += -I$(srctree)
 ccflags-y += -DTBS_STANDALONE
 
 
