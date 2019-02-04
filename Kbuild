@@ -9,6 +9,7 @@ obj-m += tbsecp3.o
 ccflags-y += -I$(M)/dvb-frontends/
 ccflags-y += -I$(M)/dvb-frontends/stid135/
 ccflags-y += -I$(M)/tuners/
+ccflags-y += -I$(KDIR)
 ccflags-y += -DTBS_STANDALONE
 
 
@@ -37,12 +38,11 @@ stid135-objs := dvb-frontends/stid135/stid135-fe.o \
 ccflags-y += -DHOST_PC -DCONFIG_DVB_STID135
 obj-m += stid135.o
 
-si2168-objs := dvb-frontends/si2168.o
 si2183-objs := dvb-frontends/si2183.o
 mn88436-objs := dvb-frontends/mn88436.o
 mtv23x-objs := dvb-frontends/mtv23x.o
 gx1503-objs := dvb-frontends/gx1503.o
-obj-m += si2168.o si2183.o mn88436.o mtv23x.o gx1503.o
+obj-m += si2183.o mn88436.o mtv23x.o gx1503.o
 
 
 av201x-objs := tuners/av201x.o
@@ -53,6 +53,5 @@ stv6120-objs := tuners/stv6120.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_STV6120
 obj-m += stv6120.o
 
-si2157-objs := tuners/si2157.o
 mxl603-objs := tuners/mxl603.o
-obj-m += si2157.o mxl603.o
+obj-m += mxl603.o

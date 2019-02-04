@@ -20,8 +20,8 @@
 #include "tas2101.h"
 #include "av201x.h"
 
-#include "si2168.h"
-#include "si2157.h"
+#include <drivers/media/dvb-frontends/si2168.h>
+#include <drivers/media/tuners/si2157.h>
 
 #include "mxl58x.h"
 
