@@ -619,7 +619,7 @@ static int stid135_tune(struct dvb_frontend *fe, bool re_tune,
 }
 
 
-static int stid135_get_algo(struct dvb_frontend *fe)
+static enum dvbfe_algo stid135_get_algo(struct dvb_frontend *fe)
 {
 	return DVBFE_ALGO_HW;
 }
