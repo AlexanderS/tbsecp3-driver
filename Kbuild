@@ -54,7 +54,7 @@ obj-m += mxl603.o
 
 rda5816-objs := tuners/rda5816.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_RDA5816
-obj-m += rda5816
+obj-m += rda5816.o
 
 stv6120-objs := tuners/stv6120.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_STV6120
