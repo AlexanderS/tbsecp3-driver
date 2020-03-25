@@ -49,9 +49,13 @@ av201x-objs := tuners/av201x.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_AV201X
 obj-m += av201x.o
 
+mxl603-objs := tuners/mxl603.o
+obj-m += mxl603.o
+
+rda5816-objs := tuners/rda5816.o
+ccflags-y += -DCONFIG_MEDIA_TUNER_RDA5816
+obj-m += rda5816
+
 stv6120-objs := tuners/stv6120.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_STV6120
 obj-m += stv6120.o
-
-mxl603-objs := tuners/mxl603.o
-obj-m += mxl603.o
