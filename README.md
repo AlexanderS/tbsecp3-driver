@@ -27,9 +27,10 @@ This repo currently contains the following modules:
   * gx1503
 * tuners
   * av201x
-  * stv6120
-  * si2157
   * mxl603
+  * rda5816
+  * si2157
+  * stv6120
 
 ## Modifications
 
