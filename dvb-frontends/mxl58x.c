@@ -795,6 +795,7 @@ static int set_tone(struct dvb_frontend *fe, enum fe_sec_tone_mode tone)
 	return 0;
 }
 
+#ifndef TBS_STANDALONE
 static void spi_read(struct dvb_frontend *fe, struct ecp3_info *ecp3inf)
 {
 	struct mxl *state = fe->demodulator_priv;
@@ -814,6 +815,7 @@ static void spi_write(struct dvb_frontend *fe,struct ecp3_info *ecp3inf)
 		state->base->write_properties(adapter,ecp3inf->reg, ecp3inf->data);
 	return ;
 }
+#endif
 
 static struct dvb_frontend_ops mxl_ops = {
 	.delsys = { SYS_DVBS, SYS_DVBS2, SYS_DSS },
@@ -850,8 +852,10 @@ static struct dvb_frontend_ops mxl_ops = {
 	.set_tone			= set_tone,
 	.set_voltage			= set_voltage,
 
+#ifndef TBS_STANDALONE
 	.spi_read			= spi_read,
 	.spi_write			= spi_write,
+#endif
 };
 
 static struct mxl_base *match_base(struct i2c_adapter *i2c, u8 adr)
