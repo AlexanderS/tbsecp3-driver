@@ -20,7 +20,6 @@ This repo currently contains the following modules:
   * saa716x_hybrid
   * saa716x_tbs-dvb
 * dvb-frontends
-  * cx24117
   * gx1133
   * gx1503
   * isl6422

@@ -38,7 +38,7 @@
 #include "stv090x.h"
 #include "tas2101.h"
 #include "av201x.h"
-#include "cx24117.h"
+#include <drivers/media/dvb-frontends/cx24117.h>
 #include "isl6422.h"
 #include "stb6100.h"
 #include "stb6100_cfg.h"
@@ -2033,6 +2033,7 @@ static void saa716x_tbs6984_init(struct saa716x_dev *saa716x)
 }
 
 
+#ifndef TBS_STANDALONE
 static void tbs6984_lnb_pwr(struct dvb_frontend *fe, int pin, int onoff)
 {
 	struct i2c_adapter *adapter = cx24117_get_i2c_adapter(fe);
@@ -2055,15 +2056,20 @@ void tbs6984_lnb_pwr1(struct dvb_frontend *fe, int demod, int onoff)
 {
 	tbs6984_lnb_pwr(fe, (demod == 0) ? 5 : 3, onoff);
 }
+#endif
 
 static struct cx24117_config tbs6984_cx24117_cfg[] = {
 	{
 		.demod_address = 0x55,
+#ifndef TBS_STANDALONE
 		.lnb_power = tbs6984_lnb_pwr0,
+#endif
 	},
 	{
 		.demod_address = 0x05,
+#ifndef TBS_STANDALONE
 		.lnb_power = tbs6984_lnb_pwr1,
+#endif
 	},
 };
 

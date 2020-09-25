@@ -92,9 +92,6 @@ saa716x_hybrid-objs += saa716x/saa716x_hybrid.o
 
 obj-m += saa716x_core.o saa716x_tbs-dvb.o saa716x_hybrid.o saa716x_ff.o
 
-cx24117-objs := dvb-frontends/cx24117.o
-obj-m += cx24117.o
-
 isl6422-objs := dvb-frontends/isl6422.o
 ccflags-y += -DCONFIG_DVB_ISL6422
 obj-m += isl6422.o
