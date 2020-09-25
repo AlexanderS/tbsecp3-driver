@@ -1,12 +1,12 @@
 # TBSECP3 driver (standalone version)
 
-This is a modified version of the tbsecp3 module (and the dependend modules)
-from the [tbsdtv/linux_media](https://github.com/tbsdtv/linux_media)
-repository.
+This is a modified version of the tbsecp3 and saa716x modules (and the
+dependend modules) from the
+[tbsdtv/linux_media](https://github.com/tbsdtv/linux_media) repository.
 
 These are out-of-tree modules and do **not** require a full v4l media tree.
 
-It is currently only tested on ArchLinux (Linux 4.18) with a _TBS 6281SE
+It is currently only tested on ArchLinux (Linux 5.8) with a _TBS 6281SE
 DVB-T/T2/C_.
 
 ## Contents
