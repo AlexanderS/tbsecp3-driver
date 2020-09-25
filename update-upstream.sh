@@ -15,16 +15,24 @@ if [ -n "$(git status -s)" ]; then
     exit 1
 fi
 
+update_upstream() {
+    if [ -r "$1" ]; then
+        cp "$1" "$2"
+    else
+        rm "$2"
+    fi
+}
+
 find tbsecp3/ -name '*.[ch]' -type f -print0 | while IFS= read -r -d $'\0' file; do
-    cp "$TBS_DIR/drivers/media/pci/$file" "$file"
+    update_upstream "$TBS_DIR/drivers/media/pci/$file" "$file"
 done
 
 find saa716x/ -name '*.[ch]' -type f -print0 | while IFS= read -r -d $'\0' file; do
-    cp "$TBS_DIR/drivers/media/pci/$file" "$file"
+    update_upstream "$TBS_DIR/drivers/media/pci/$file" "$file"
 done
 
 find dvb-frontends/ tuners/ -name '*.[ch]' -type f -print0 | while IFS= read -r -d $'\0' file; do
-    cp "$TBS_DIR/drivers/media/$file" "$file"
+    update_upstream "$TBS_DIR/drivers/media/$file" "$file"
 done
 
 if [ -n "$(git status -s)" ]; then
