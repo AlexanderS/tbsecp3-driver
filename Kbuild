@@ -38,6 +38,10 @@ stid135-objs := dvb-frontends/stid135/stid135-fe.o \
 ccflags-y += -DHOST_PC -DCONFIG_DVB_STID135
 obj-m += stid135.o
 
+gx1133-objs := dvb-frontends/gx1133.o
+ccflags-y += -DCONFIG_DVB_GX1133
+obj-m += gx1133.o
+
 si2183-objs := dvb-frontends/si2183.o
 mn88436-objs := dvb-frontends/mn88436.o
 mtv23x-objs := dvb-frontends/mtv23x.o
