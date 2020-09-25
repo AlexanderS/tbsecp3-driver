@@ -42,11 +42,14 @@ gx1133-objs := dvb-frontends/gx1133.o
 ccflags-y += -DCONFIG_DVB_GX1133
 obj-m += gx1133.o
 
-si2183-objs := dvb-frontends/si2183.o
 mn88436-objs := dvb-frontends/mn88436.o
+ccflags-y += -DCONFIG_DVB_MN88436
+obj-m += mn88436.o
+
+si2183-objs := dvb-frontends/si2183.o
 mtv23x-objs := dvb-frontends/mtv23x.o
 gx1503-objs := dvb-frontends/gx1503.o
-obj-m += si2183.o mn88436.o mtv23x.o gx1503.o
+obj-m += si2183.o mtv23x.o gx1133.o gx1503.o
 
 
 av201x-objs := tuners/av201x.o
