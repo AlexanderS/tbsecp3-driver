@@ -71,6 +71,13 @@ there are two major problems with the upstream drivers:
 
 * Some files are missing an include of `linux/version.h`.
 
+* The saa716x driver contains a custom autorepeat handling for ir commands.
+  Because the kernel changed the timer API in 4.14 the custom handling is
+  removed when building for newer kernels (the autorepeat is handled in the
+  input layer now). This is the kernel commit
+  [5aeaa3e668de0782d1502f3d5751e2266a251d7c](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=5aeaa3e668de0782d1502f3d5751e2266a251d7c)
+  applied to the saa716x driver.
+
 ## Build
 
 To build the modules just execute:
