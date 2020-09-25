@@ -78,6 +78,11 @@ there are two major problems with the upstream drivers:
   [5aeaa3e668de0782d1502f3d5751e2266a251d7c](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=5aeaa3e668de0782d1502f3d5751e2266a251d7c)
   applied to the saa716x driver.
 
+* The saa716 driver contains a handler for the `AUDIO_GET_PTS` ioctl.
+  Support for this ioctl was removed in kernel commit
+  [d21c249b26311dd193b100e65fc9e7ae96233d40](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=d21c249b26311dd193b100e65fc9e7ae96233d40).
+  The ioctl handler is removed via ifdef if `AUDIO_GET_PTS` is not availabe.
+
 ## Build
 
 To build the modules just execute:
