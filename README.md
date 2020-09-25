@@ -58,15 +58,15 @@ there are two major problems with the upstream drivers:
   introduced. The media tree in the kernel does not contain this changes yet,
   so we need to add back the old format of the settings inside `#ifdef`.
 
-* The tbsdtv/linux\_media tree contains some patches to add `spi_read` and
-  `spi_write` functions to the device operations for the dvb-frontends and
-  tuners. This requires a modification of the dvb-core module. Because the aim
-  of this repo is to use the dvb-core module from your running linux kernel,
-  this does not work.
+* The tbsdtv/linux\_media tree contains some patches to add `spi_read`,
+  `spi_write`, `eeprom_read` and `eeprom_write` functions to the device
+  operations for the dvb-frontends. This requires a modification of the
+  dvb-core module. Because the aim of this repo is to use the dvb-core
+  module from your running linux kernel, this does not work.
   
   This modifications are ifdef'ed with `TBS_STANDALONE`. So you cannot use
-  `spi_read` and `spi_write` with the modules from this repository. But this
-  should no be required for normal operation.
+  `spi_read`, `spi_write`, `eeprom_read` and `eeprom_write` with the modules
+  from this repository. But this should no be required for normal operation.
 
 * Some files are missing an include of `linux/version.h`.
 
