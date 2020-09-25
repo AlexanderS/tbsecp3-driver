@@ -11,6 +11,8 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 
+#include <linux/version.h>
+
 #include "saa716x_spi.h"
 #include "saa716x_msi.h"
 #include "saa716x_priv.h"
