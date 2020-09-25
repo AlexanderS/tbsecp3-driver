@@ -40,7 +40,11 @@ struct infrared {
 	u8			protocol;
 	u16			last_key;
 	u16			last_toggle;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 	bool			delay_timer_finished;
+#else
+	bool                    keypressed;
+#endif
 };
 
 #define IR_RC5		0
@@ -48,6 +52,7 @@ struct infrared {
 
 
 /* key-up timer */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 static void ir_emit_keyup(unsigned long parm)
 {
 	struct infrared *ir = (struct infrared *) parm;
@@ -58,6 +63,18 @@ static void ir_emit_keyup(unsigned long parm)
 	input_report_key(ir->input_dev, ir->last_key, 0);
 	input_sync(ir->input_dev);
 }
+#else
+static void ir_emit_keyup(struct timer_list *t)
+{
+	struct infrared *ir = from_timer(ir, t, keyup_timer);
+	if (!ir || !ir->keypressed)
+		return;
+
+	input_report_key(ir->input_dev, ir->last_key, 0);
+	input_sync(ir->input_dev);
+	ir->keypressed = false;
+}
+#endif
 
 
 /* tasklet */
@@ -114,6 +131,7 @@ static void ir_emit_key(unsigned long parm)
 		return;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 	if (timer_pending(&ir->keyup_timer)) {
 		del_timer(&ir->keyup_timer);
 		if (ir->last_key != keycode || toggle != ir->last_toggle) {
@@ -130,12 +148,25 @@ static void ir_emit_key(unsigned long parm)
 		input_event(ir->input_dev, EV_KEY, keycode, 1);
 		input_sync(ir->input_dev);
 	}
+#else
+	if (ir->keypressed &&
+	    (ir->last_key != keycode || toggle != ir->last_toggle))
+		input_event(ir->input_dev, EV_KEY, ir->last_key, 0);
 
+	input_event(ir->input_dev, EV_KEY, keycode, 1);
+	input_sync(ir->input_dev);
+
+	ir->keypressed = true;
+#endif
 	ir->last_key = keycode;
 	ir->last_toggle = toggle;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 	ir->keyup_timer.expires = jiffies + UP_TIMEOUT;
 	add_timer(&ir->keyup_timer);
+#else
+	mod_timer(&ir->keyup_timer, jiffies + UP_TIMEOUT);
+#endif
 
 }
 
@@ -167,6 +198,7 @@ static void ir_register_keys(struct infrared *ir)
 }
 
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 /* called by the input driver after rep[REP_DELAY] ms */
 static void ir_repeat_key(unsigned long parm)
 {
@@ -174,6 +206,7 @@ static void ir_repeat_key(unsigned long parm)
 
 	ir->delay_timer_finished = true;
 }
+#endif
 
 
 /* interrupt handler */
@@ -203,9 +236,13 @@ int saa716x_ir_init(struct saa716x_dev *saa716x)
 	if (!ir)
 		return -ENOMEM;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 	init_timer(&ir->keyup_timer);
 	ir->keyup_timer.function = ir_emit_keyup;
 	ir->keyup_timer.data = (unsigned long) ir;
+#else
+	timer_setup(&ir->keyup_timer, ir_emit_keyup, 0);
+#endif
 
 	input_dev = input_allocate_device();
 	if (!input_dev)
@@ -237,8 +274,18 @@ int saa716x_ir_init(struct saa716x_dev *saa716x)
 	ir_register_keys(ir);
 
 	/* override repeat timer */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
 	input_dev->timer.function = ir_repeat_key;
 	input_dev->timer.data = (unsigned long) ir;
+#else
+
+	/*
+	 * Input core's default autorepeat is 33 cps with 250 msec
+	 * delay, let's adjust to numbers more suitable for remote
+	 * control.
+	 */
+	input_enable_softrepeat(input_dev, 250, 125);
+#endif
 
 	tasklet_init(&ir->tasklet, ir_emit_key, (unsigned long) saa716x);
 	saa716x->ir_priv = ir;
