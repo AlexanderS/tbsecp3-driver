@@ -419,6 +419,7 @@ static int saa716x_ff_osd_init(struct saa716x_dev *saa716x)
 	return 0;
 }
 
+#ifdef AUDIO_GET_PTS
 static int do_dvb_audio_ioctl(struct dvb_device *dvbdev,
 			      unsigned int cmd, void *parg)
 {
@@ -453,13 +454,22 @@ static long dvb_audio_ioctl(struct file *file,
 
 	return saa716x_usercopy (dvbdev, cmd, arg, do_dvb_audio_ioctl);
 }
+#endif
 
 static struct file_operations dvb_audio_fops = {
 	.owner		= THIS_MODULE,
+#ifdef AUDIO_GET_PTS
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36) && !defined(EXPERIMENTAL_TREE)
 	.ioctl		= dvb_audio_ioctl,
 #else
 	.unlocked_ioctl	= dvb_audio_ioctl,
+#endif
+#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36) && !defined(EXPERIMENTAL_TREE)
+	.ioctl		= dvb_generic_ioctl,
+#else
+	.unlocked_ioctl	= dvb_generic_ioctl,
+#endif
 #endif
 	.open		= dvb_generic_open,
 	.release	= dvb_generic_release,
