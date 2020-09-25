@@ -505,6 +505,7 @@ static int gx1133_read_status(struct dvb_frontend *fe, enum fe_status *status)
 	return ret;
 }
 
+#ifndef TBS_STANDALONE
 static void gx1133_spi_read(struct dvb_frontend *fe, struct ecp3_info *ecp3inf)
 {
 
@@ -522,6 +523,7 @@ static void gx1133_spi_write(struct dvb_frontend *fe,struct ecp3_info *ecp3inf)
 		priv->cfg->write_properties(adapter,ecp3inf->reg, ecp3inf->data);
 	return ;
 }
+#endif
 
 static int gx1133_set_voltage(struct dvb_frontend *fe,
 	enum fe_sec_voltage voltage)
@@ -1321,8 +1323,10 @@ static struct dvb_frontend_ops gx1133_ops = {
 	.set_frontend = gx1133_set_frontend,
 	.get_frontend = gx1133_get_frontend,
 
+#ifndef TBS_STANDALONE
 	.spi_read			= gx1133_spi_read,
 	.spi_write			= gx1133_spi_write,
+#endif
 
 
 };
