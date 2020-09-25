@@ -21,6 +21,8 @@
 #ifndef GX1133_PRIV_H
 #define GX1133_PRIV_H
 
+#include <linux/version.h>
+
 #define Demod_TOP            		0xff
 #define DVB_S2                 		0xf2
 
