@@ -14,24 +14,39 @@ DVB-T/T2/C_.
 This repo currently contains the following modules:
 
 * tbsecp3
+* saa716x
+  * saa716x_core
+  * saa716x_ff
+  * saa716x_hybrid
+  * saa716x_tbs-dvb
 * dvb-frontends
+  * cx24117
   * gx1133
   * gx1503
+  * isl6422
+  * isl6423
+  * mb86a16
   * mn88436
   * mtv23x
   * mxl58x
-  * si2168
   * si2183
+  * stb6100
   * stid135
+  * stv090x
   * stv091x
+  * stv6110x
   * tas2101
   * tas2971
+  * tda1004x
+  * zl10353
 * tuners
   * av201x
   * mxl603
   * rda5816
-  * si2157
   * stv6120
+  * tda18212
+  * tda827x
+  * tda8290
 
 ## Modifications
 
