@@ -1,10 +1,16 @@
+*.a
+*.a.cmd
 *.o
 *.o.d
 *.o.cmd
 *.ko
 *.ko.cmd
+*.mod
 *.mod.c
+*.mod.cmd
 Module.symvers
+.Module.symvers.cmd
 modules.order
+.modules.order.cmd
 
 .tmp_versions/
