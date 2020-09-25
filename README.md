@@ -15,16 +15,17 @@ This repo currently contains the following modules:
 
 * tbsecp3
 * dvb-frontends
-  * tas2101
-  * mxl58x
-  * stv091x
-  * tas2971
-  * stid135
-  * si2168
-  * si2183
+  * gx1133
+  * gx1503
   * mn88436
   * mtv23x
-  * gx1503
+  * mxl58x
+  * si2168
+  * si2183
+  * stid135
+  * stv091x
+  * tas2101
+  * tas2971
 * tuners
   * av201x
   * mxl603
