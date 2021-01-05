@@ -332,8 +332,10 @@ static int stid135_set_parameters(struct dvb_frontend *fe)
 	u32 pls_mode, pls_code;
 	s32 rf_power;
 	s32 current_llr;
+#ifdef DTV_MODCODE
     u32 i, j, m;
     struct fe_sat_dvbs2_mode_t modcode_mask[FE_SAT_MODCODE_UNKNOWN*4];
+#endif
 
     dev_dbg(&state->base->i2c->dev,
 			"delivery_system=%u modulation=%u frequency=%u symbol_rate=%u inversion=%u stream_id=%d\n",
@@ -436,6 +438,7 @@ static int stid135_set_parameters(struct dvb_frontend *fe)
 		dev_dbg(&state->base->i2c->dev, "%s: not locked, band rf_power %d dBm !\n", __func__, rf_power / 1000);
 	}
 
+#ifdef DTV_MODCODE
 	/* Set modcode after search */
 	if (p->modcode != MODCODE_ALL) {
         m = p->modcode;
@@ -465,6 +468,7 @@ static int stid135_set_parameters(struct dvb_frontend *fe)
         if (err != FE_LLA_NO_ERROR)
             dev_err(&state->base->i2c->dev, "%s: fe_stid135_set_modcodes_filter error %d !\n", __func__, err);
 	}
+#endif
 
 	/* Set ISI after search */
 	if (p->stream_id != NO_STREAM_ID_FILTER) {
@@ -981,7 +985,9 @@ static void eeprom_write(struct dvb_frontend *fe,struct eeprom_info *eepinf)
 		state->base->write_eeprom(adapter,eepinf->reg, eepinf->data);
 	return ;
 }
+#endif
 
+#ifdef DTV_MODCODE
 static int stid135_read_temp(struct dvb_frontend *fe, s16 *temp)
 {
 	struct stv *state = fe->demodulator_priv;
@@ -1040,6 +1046,8 @@ static struct dvb_frontend_ops stid135_ops = {
 	.spi_write			= spi_write,
 	.eeprom_read			= eeprom_read,
 	.eeprom_write			= eeprom_write,
+#endif
+#ifdef DTV_MODCODE
     .read_temp			= stid135_read_temp,
 #endif
 };
