@@ -1000,7 +1000,7 @@ static struct stid135_cfg tbs6903x_V2_stid135_cfg = {
 	.read_eeprom = ecp3_eeprom_read,
 	.set_TSsampling = NULL,
 	.set_TSparam = NULL,
-	.vglna = 2,
+	.vglna = 1,
 };
 
 static struct stid135_cfg tbs6909x_V2_stid135_cfg = {
@@ -1014,8 +1014,7 @@ static struct stid135_cfg tbs6909x_V2_stid135_cfg = {
 	.read_eeprom = ecp3_eeprom_read,
 	.set_TSsampling = NULL,
 	.set_TSparam = NULL,
-	.vglna = 1,
-	
+	.vglna = 2,
 };
 
 static struct stid135_cfg tbs6912_stid135_cfg = {
