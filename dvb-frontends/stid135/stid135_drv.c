@@ -2430,7 +2430,7 @@ fe_lla_error_t	fe_stid135_search(fe_stid135_handle_t handle, enum fe_stid135_dem
 			error |= fe_stid135_manage_manual_rolloff(handle, demod);
 		}
 	#endif
-#if 0
+#if 1
 	if((pSearch->symbol_rate >= pParams->master_clock) && (pParams->demod_search_algo[demod-1] == FE_SAT_BLIND_SEARCH)) /* if SR >= MST_CLK  & Blind search algo : usecase forbidden */
 		return(FE_LLA_NOT_SUPPORTED);
 
