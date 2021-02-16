@@ -24,6 +24,7 @@ This repo currently contains the following modules:
   * gx1503
   * isl6422
   * isl6423
+  * m88rs6060
   * mb86a16
   * mn88436
   * mtv23x

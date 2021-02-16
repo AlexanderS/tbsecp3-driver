@@ -17,6 +17,9 @@ tas2101-objs := dvb-frontends/tas2101.o
 ccflags-y += -DCONFIG_DVB_TAS2101
 obj-m += tas2101.o
 
+m88rs6060-objs := dvb-frontends/m88rs6060.o
+obj-m += m88rs6060.o
+
 mxl58x-objs := dvb-frontends/mxl58x.o
 ccflags-y += -DCONFIG_DVB_MXL58X
 obj-m += mxl58x.o

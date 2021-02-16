@@ -1722,6 +1722,7 @@ static int m88rs6060_diseqc_send_burst(struct dvb_frontend *fe,
 	return ret;
 }
 
+#ifndef TBS_STANDALONE
 static void m88rs6060_spi_read(struct dvb_frontend *fe,
 			       struct ecp3_info *ecp3inf)
 {
@@ -1746,6 +1747,7 @@ static void m88rs6060_spi_write(struct dvb_frontend *fe,
 				      ecp3inf->data);
 	return;
 }
+#endif
 
 static const struct dvb_frontend_ops m88rs6060_ops = {
 	.delsys = {SYS_DVBS, SYS_DVBS2},
@@ -1774,8 +1776,10 @@ static const struct dvb_frontend_ops m88rs6060_ops = {
 	.set_tone = m88rs6060_set_tone,
 	.diseqc_send_burst = m88rs6060_diseqc_send_burst,
 	.diseqc_send_master_cmd = m88rs6060_diseqc_send_master_cmd,
+#ifndef TBS_STANDALONE
 	.spi_read = m88rs6060_spi_read,
 	.spi_write = m88rs6060_spi_write,
+#endif
 
 };
 
