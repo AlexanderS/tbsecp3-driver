@@ -38,7 +38,7 @@
 #include "stv090x.h"
 #include "tas2101.h"
 #include "av201x.h"
-#include <drivers/media/dvb-frontends/cx24117.h>
+#include "cx24117.h"
 #include "isl6422.h"
 #include "stb6100.h"
 #include "stb6100_cfg.h"
@@ -46,8 +46,8 @@
 #include "tda18212.h"
 #include "cxd2820r.h"
 
-#include <drivers/media/dvb-frontends/si2168.h>
-#include <drivers/media/tuners/si2157.h>
+#include "si2168.h"
+#include "si2157.h"
 
 #include "stv6120.h"
 #include "stv091x.h"

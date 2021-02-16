@@ -20,6 +20,7 @@ This repo currently contains the following modules:
   * saa716x_hybrid
   * saa716x_tbs-dvb
 * dvb-frontends
+  * cx24117
   * gx1133
   * gx1503
   * isl6422
@@ -29,6 +30,7 @@ This repo currently contains the following modules:
   * mn88436
   * mtv23x
   * mxl58x
+  * si2168
   * si2183
   * stb6100
   * stid135
@@ -43,6 +45,7 @@ This repo currently contains the following modules:
   * av201x
   * mxl603
   * rda5816
+  * si2157
   * stv6120
   * tda18212
   * tda827x

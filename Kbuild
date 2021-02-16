@@ -49,10 +49,11 @@ mn88436-objs := dvb-frontends/mn88436.o
 ccflags-y += -DCONFIG_DVB_MN88436
 obj-m += mn88436.o
 
+si2168-objs := dvb-frontends/si2168.o
 si2183-objs := dvb-frontends/si2183.o
 mtv23x-objs := dvb-frontends/mtv23x.o
 gx1503-objs := dvb-frontends/gx1503.o
-obj-m += si2183.o mtv23x.o gx1133.o gx1503.o
+obj-m += si2168.o si2183.o mtv23x.o gx1133.o gx1503.o
 
 
 av201x-objs := tuners/av201x.o
@@ -65,6 +66,9 @@ obj-m += mxl603.o
 rda5816-objs := tuners/rda5816.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_RDA5816
 obj-m += rda5816.o
+
+si2157-objs := tuners/si2157.o
+obj-m += si2157.o
 
 stv6120-objs := tuners/stv6120.o
 ccflags-y += -DCONFIG_MEDIA_TUNER_STV6120
@@ -94,6 +98,9 @@ saa716x_tbs-dvb-objs += saa716x/saa716x_budget.o saa716x/tbsci-i2c.o saa716x/tbs
 saa716x_hybrid-objs += saa716x/saa716x_hybrid.o
 
 obj-m += saa716x_core.o saa716x_tbs-dvb.o saa716x_hybrid.o saa716x_ff.o
+
+cx24117-objs := dvb-frontends/cx24117.o
+obj-m += cx24117.o
 
 isl6422-objs := dvb-frontends/isl6422.o
 ccflags-y += -DCONFIG_DVB_ISL6422
