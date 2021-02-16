@@ -39,7 +39,7 @@
 
 #include "stid135.h"
 #include "rda5816.h"
-
+#include "m88rs6060.h"
 #include "gx1133.h"
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
@@ -1056,7 +1056,7 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 	//struct mxl603_config mxl603_config;
 	struct mtv23x_config mtv23x_config;
 	struct gx1503_config gx1503_config;
-
+	struct m88rs6060_cfg m88rs6060_config;
 	struct i2c_board_info info;
 	struct i2c_adapter *i2c = &adapter->i2c->i2c_adap;
 	struct i2c_client *client_demod, *client_tuner;
@@ -1072,6 +1072,42 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 	}
 
 	switch (dev->info->board_id) {
+	   case TBSECP3_BOARD_TBS6904SE:
+	   case TBSECP3_BOARD_TBS6902SE:	   
+		 memset(&m88rs6060_config, 0, sizeof(m88rs6060_config));
+		 m88rs6060_config.fe = &adapter->fe;
+		 m88rs6060_config.clk = 27000000;
+		 m88rs6060_config.i2c_wr_max = 33;
+		 m88rs6060_config.ts_mode = MtFeTsOutMode_Parallel;
+		 m88rs6060_config.ts_pinswitch = 1;
+
+		 m88rs6060_config.envelope_mode = 0;
+		 m88rs6060_config.demod_adr = 0x69;
+		 m88rs6060_config.tuner_adr = 0x2c;
+		 m88rs6060_config.repeater_value = 0x12;
+		 m88rs6060_config.read_properties = ecp3_spi_read;
+		 m88rs6060_config.write_properties = ecp3_spi_write;
+		memset(&info, 0, sizeof(struct i2c_board_info));
+		strlcpy(info.type, "m88rs6060", I2C_NAME_SIZE);
+		info.addr = 0x69;
+		info.platform_data = &m88rs6060_config;
+		request_module(info.type);
+		client_demod = i2c_new_client_device(i2c, &info);
+		if (client_demod == NULL ||
+					client_demod->dev.driver == NULL)
+				goto frontend_atach_fail;
+		if (!try_module_get(client_demod->dev.driver->owner)) {
+				i2c_unregister_device(client_demod);
+					goto frontend_atach_fail;
+					}
+		adapter->i2c_client_demod = client_demod;
+		if (tbsecp3_attach_sec(adapter, adapter->fe) == NULL) {
+			    dev_warn(&dev->pci_dev->dev,
+			    			    "error attaching lnb control on adapter %d\n",
+							    adapter->nr);
+			}		    
+		
+		 break; 
 	   case TBSECP3_BOARD_TBS6508:
 		/* attach demod */
 		memset(&si2183_config, 0, sizeof(si2183_config));
