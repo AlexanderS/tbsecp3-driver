@@ -3552,8 +3552,10 @@ static enum dvbfe_search stv090x_search(struct dvb_frontend *fe)
 	      stv090x_set_pls(state, 1, props->scrambling_sequence_index);
 
 	if (stv090x_algo(state) == STV090x_RANGEOK) {
+#ifdef DTV_MODCODE
 		if (props->delivery_system == SYS_DVBS2 && props->modcode != MODCODE_ALL)
 			stv090x_set_modcode(state, props->modcode);
+#endif
 		dprintk(FE_DEBUG, 1, "Search success!");
 		return DVBFE_ALGO_SEARCH_SUCCESS;
 	} else {
