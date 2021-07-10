@@ -1822,6 +1822,7 @@ static const struct dvb_frontend_ops mb86a16_ops = {
 	.set_tone			= mb86a16_set_tone,
 };
 
+#if IS_REACHABLE(CONFIG_DVB_MB86A16)
 struct dvb_frontend *mb86a16_attach(const struct mb86a16_config *config,
 				    struct i2c_adapter *i2c_adap)
 {
@@ -1849,5 +1850,6 @@ error:
 	return NULL;
 }
 EXPORT_SYMBOL(mb86a16_attach);
+#endif
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Manu Abraham");

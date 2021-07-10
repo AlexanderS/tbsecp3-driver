@@ -1263,7 +1263,7 @@ static const struct dvb_frontend_ops tda10045_ops = {
 	.read_snr = tda1004x_read_snr,
 	.read_ucblocks = tda1004x_read_ucblocks,
 };
-
+#if IS_REACHABLE(CONFIG_DVB_TDA1004X)
 struct dvb_frontend* tda10045_attach(const struct tda1004x_config* config,
 				     struct i2c_adapter* i2c)
 {
@@ -1370,6 +1370,7 @@ struct dvb_frontend* tda10046_attach(const struct tda1004x_config* config,
 	state->frontend.demodulator_priv = state;
 	return &state->frontend;
 }
+#endif
 
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Turn on/off frontend debugging (default:off).");

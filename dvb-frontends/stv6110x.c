@@ -443,7 +443,7 @@ static int stv6110x_remove(struct i2c_client *client)
 	stv6110x_release(stv6110x->frontend);
 	return 0;
 }
-
+#if IS_REACHABLE(CONFIG_DVB_STV6110x)
 const struct stv6110x_devctl *stv6110x_attach(struct dvb_frontend *fe,
 					const struct stv6110x_config *config,
 					struct i2c_adapter *i2c)
@@ -470,6 +470,7 @@ const struct stv6110x_devctl *stv6110x_attach(struct dvb_frontend *fe,
 	return stv6110x->devctl;
 }
 EXPORT_SYMBOL(stv6110x_attach);
+#endif
 
 static const struct i2c_device_id stv6110x_id_table[] = {
 	{"stv6110x", 0},

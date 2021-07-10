@@ -251,7 +251,7 @@ static void isl6423_release(struct dvb_frontend *fe)
 	kfree(fe->sec_priv);
 	fe->sec_priv = NULL;
 }
-
+#if IS_REACHABLE(CONFIG_DVB_ISL6423)
 struct dvb_frontend *isl6423_attach(struct dvb_frontend *fe,
 				    struct i2c_adapter *i2c,
 				    const struct isl6423_config *config)
@@ -290,6 +290,7 @@ exit:
 	return NULL;
 }
 EXPORT_SYMBOL(isl6423_attach);
+#endif
 
 MODULE_DESCRIPTION("ISL6423 SEC");
 MODULE_AUTHOR("Manu Abraham");
