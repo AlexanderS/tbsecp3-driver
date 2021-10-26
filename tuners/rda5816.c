@@ -451,8 +451,13 @@ static void rda5816_release(struct dvb_frontend* fe)
 static const struct dvb_tuner_ops rda5816_tuner_ops = {
 	.info = {
 		.name           = "RDA5816",
+#ifdef MHz
 		.frequency_min_hz = 850 * MHz,
 		.frequency_max_hz = 2300 * MHz,
+#else
+		.frequency_min =  850000000,
+		.frequency_max = 2300000000,
+#endif
 	},
 
 	.release = rda5816_release,

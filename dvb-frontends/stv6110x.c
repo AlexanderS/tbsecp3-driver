@@ -371,8 +371,13 @@ static void stv6110x_setup_divider(struct stv6110x_state *stv6110x)
 static const struct dvb_tuner_ops stv6110x_ops = {
 	.info = {
 		.name		  = "STV6110(A) Silicon Tuner",
+#ifdef MHz
 		.frequency_min_hz =  950 * MHz,
 		.frequency_max_hz = 2150 * MHz,
+#else
+		.frequency_min    =  950000000,
+		.frequency_max    = 2150000000,
+#endif
 	},
 	.release		= stv6110x_release
 };

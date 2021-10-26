@@ -773,8 +773,13 @@ err:
 static const struct dvb_tuner_ops si2157_ops = {
 	.info = {
 		.name             = "Silicon Labs Si2141/Si2146/2147/2148/2157/2158",
+#ifdef MHz
 		.frequency_min_hz =  42 * MHz,
 		.frequency_max_hz = 870 * MHz,
+#else
+		.frequency_min    =  42000000,
+		.frequency_max    = 870000000,
+#endif
 	},
 
 	.init = si2157_init,

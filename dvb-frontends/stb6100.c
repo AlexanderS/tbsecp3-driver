@@ -515,8 +515,13 @@ static int stb6100_set_params(struct dvb_frontend *fe)
 static const struct dvb_tuner_ops stb6100_ops = {
 	.info = {
 		.name			= "STB6100 Silicon Tuner",
+#ifdef MHz
 		.frequency_min_hz	=  950 * MHz,
 		.frequency_max_hz	= 2150 * MHz,
+#else
+		.frequency_min		=  950000000,
+		.frequency_max		= 2150000000,
+#endif
 	},
 
 	.init		= stb6100_init,

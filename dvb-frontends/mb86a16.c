@@ -1793,9 +1793,15 @@ static const struct dvb_frontend_ops mb86a16_ops = {
 	.delsys = { SYS_DVBS },
 	.info = {
 		.name			= "Fujitsu MB86A16 DVB-S",
+#ifdef MHz
 		.frequency_min_hz	=  950 * MHz,
 		.frequency_max_hz	= 2150 * MHz,
 		.frequency_stepsize_hz	=    3 * MHz,
+#else
+		.frequency_min		=  950000000,
+		.frequency_max		= 2150000000,
+		.frequency_stepsize	=    3000000,
+#endif
 		.symbol_rate_min	= 1000000,
 		.symbol_rate_max	= 45000000,
 		.symbol_rate_tolerance	= 500,

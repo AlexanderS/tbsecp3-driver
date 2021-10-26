@@ -807,9 +807,15 @@ static int tda827x_initial_sleep(struct dvb_frontend *fe)
 static const struct dvb_tuner_ops tda827xo_tuner_ops = {
 	.info = {
 		.name = "Philips TDA827X",
+#ifdef MHz
 		.frequency_min_hz  =  55 * MHz,
 		.frequency_max_hz  = 860 * MHz,
 		.frequency_step_hz = 250 * kHz
+#else
+		.frequency_min     =  55000000,
+		.frequency_max     = 860000000,
+		.frequency_step    =    250000
+#endif
 	},
 	.release = tda827x_release,
 	.init = tda827x_initial_init,
@@ -823,9 +829,15 @@ static const struct dvb_tuner_ops tda827xo_tuner_ops = {
 static const struct dvb_tuner_ops tda827xa_tuner_ops = {
 	.info = {
 		.name = "Philips TDA827XA",
+#ifdef MHz
 		.frequency_min_hz  =  44 * MHz,
 		.frequency_max_hz  = 906 * MHz,
 		.frequency_step_hz = 62500
+#else
+		.frequency_min     =  44000000,
+		.frequency_max     = 906000000,
+		.frequency_step    =     62500
+#endif
 	},
 	.release = tda827x_release,
 	.init = tda827x_init,

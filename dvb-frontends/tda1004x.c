@@ -1236,9 +1236,15 @@ static const struct dvb_frontend_ops tda10045_ops = {
 	.delsys = { SYS_DVBT },
 	.info = {
 		.name = "Philips TDA10045H DVB-T",
+#ifdef MHz
 		.frequency_min_hz =  51 * MHz,
 		.frequency_max_hz = 858 * MHz,
 		.frequency_stepsize_hz = 166667,
+#else
+		.frequency_min    =  51000000,
+		.frequency_max    = 858000000,
+		.frequency_stepsize = 166667,
+#endif
 		.caps =
 		    FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
 		    FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 | FE_CAN_FEC_AUTO |
@@ -1306,9 +1312,15 @@ static const struct dvb_frontend_ops tda10046_ops = {
 	.delsys = { SYS_DVBT },
 	.info = {
 		.name = "Philips TDA10046H DVB-T",
+#ifdef MHz
 		.frequency_min_hz =  51 * MHz,
 		.frequency_max_hz = 858 * MHz,
 		.frequency_stepsize_hz = 166667,
+#else
+		.frequency_min    =  51000000,
+		.frequency_max    = 858000000,
+		.frequency_stepsize = 166667,
+#endif
 		.caps =
 		    FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
 		    FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 | FE_CAN_FEC_AUTO |
