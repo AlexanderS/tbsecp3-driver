@@ -41,7 +41,14 @@
 #include "rda5816.h"
 #include "m88rs6060.h"
 #include "gx1133.h"
+#include "cxd2878.h"
+
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
+
+static bool swapfe = false;
+module_param(swapfe, bool, 0444);
+MODULE_PARM_DESC(swapfe, "swap combo frontends order");
+
 
 struct sec_priv {
 	struct tbsecp3_adapter *adap;
@@ -1128,6 +1135,79 @@ static int GetTSSpeed(struct i2c_adapter *i2c,int tuner)
 
 	return bit_rate;
 }
+static struct cxd2878_config tbs6209se_cfg[] = {
+	{
+		.addr_slvt = 0x64,
+		.xtal      = SONY_DEMOD_XTAL_24000KHz,
+		.tuner_addr = 0x60,
+		.tuner_xtal = SONY_ASCOT3_XTAL_24000KHz,
+		.ts_mode	= 0,
+		.ts_ser_data = 0,
+		.ts_clk = 1,
+		.ts_valid = 0,
+		.atscCoreDisable = 0,
+		.write_properties = ecp3_spi_write, 
+		.read_properties = ecp3_spi_read,	
+	},
+	{
+		.addr_slvt = 0x6c,
+		.xtal      = SONY_DEMOD_XTAL_24000KHz,
+		.tuner_addr = 0x60,
+		.tuner_xtal = SONY_ASCOT3_XTAL_24000KHz,
+		.ts_mode	= 0,
+		.ts_ser_data = 0,
+		.ts_clk = 1,
+		.ts_valid = 0,
+		.atscCoreDisable = 0,
+		.write_properties = ecp3_spi_write, 
+		.read_properties = ecp3_spi_read,	
+	},	
+
+	{
+		.addr_slvt = 0x65,
+		.xtal      = SONY_DEMOD_XTAL_24000KHz,
+		.tuner_addr = 0x60,
+		.tuner_xtal = SONY_ASCOT3_XTAL_24000KHz,
+		.ts_mode	= 0,
+		.ts_ser_data = 0,
+		.ts_clk = 1,
+		.ts_valid = 0,
+		.atscCoreDisable = 0,
+		.write_properties = ecp3_spi_write, 
+		.read_properties = ecp3_spi_read,	
+	},
+	{
+		.addr_slvt = 0x6D,
+		.xtal      = SONY_DEMOD_XTAL_24000KHz,
+		.tuner_addr = 0x60,
+		.tuner_xtal = SONY_ASCOT3_XTAL_24000KHz,
+		.ts_mode	= 0,
+		.ts_ser_data = 0,
+		.ts_clk = 1,
+		.ts_valid = 0,
+		.atscCoreDisable = 0,
+		.write_properties = ecp3_spi_write, 
+		.read_properties = ecp3_spi_read,	
+	}	
+};
+static void tbs6209SE_reset_demod(struct tbsecp3_adapter *adapter)
+{
+	struct tbsecp3_dev *dev = adapter->dev;
+	u32 tmp;
+	u32 gpio;
+	if(adapter->nr<4)
+		gpio= 0x4*(adapter->nr);
+	if(adapter->nr>3)
+		gpio = 0x2c+0x4*(adapter->nr-4);
+
+	tmp = tbs_read(TBSECP3_GPIO_BASE, gpio);
+	tmp = tmp &0xfffffffe;
+	tbs_write(TBSECP3_GPIO_BASE, gpio, tmp);	
+	msleep(50);
+	tmp = tmp|0x01;
+	tbs_write(TBSECP3_GPIO_BASE, gpio, tmp);
+	msleep(50);
+}
 static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 {
 	struct tbsecp3_dev *dev = adapter->dev;
@@ -1150,15 +1230,23 @@ static int tbsecp3_frontend_attach(struct tbsecp3_adapter *adapter)
 	adapter->i2c_client_demod = NULL;
 	adapter->i2c_client_tuner = NULL;
 
-	if((TBSECP3_BOARD_TBS6304 != dev->info->board_id) && (TBSECP3_BOARD_TBS6308 != dev->info->board_id) && (TBSECP3_BOARD_TBS6302SE != dev->info->board_id)&& (TBSECP3_BOARD_TBS6301SE != dev->info->board_id)){
+	if((TBSECP3_BOARD_TBS6304 != dev->info->board_id) && (TBSECP3_BOARD_TBS6308 != dev->info->board_id) && (TBSECP3_BOARD_TBS6302SE != dev->info->board_id)&& (TBSECP3_BOARD_TBS6301SE != dev->info->board_id)&&(TBSECP3_BOARD_TBS6209SE != dev->info->board_id)){
 		reset_demod(adapter);
 		set_mac_address(adapter);
 	}
 
 	switch (dev->info->board_id) {
+	   case TBSECP3_BOARD_TBS6209SE:
+	   		tbs6209SE_reset_demod(adapter);
+	   		set_mac_address(adapter);		
+	   		adapter->fe = dvb_attach(cxd2878_attach, &tbs6209se_cfg[(adapter->nr)%4], i2c);
+		if (adapter->fe == NULL)
+		    goto frontend_atach_fail;
+	   		break;	
 	   case TBSECP3_BOARD_TBS6910SE:
 	   case TBSECP3_BOARD_TBS6904SE:
-	   case TBSECP3_BOARD_TBS6902SE:	   
+	   case TBSECP3_BOARD_TBS6902SE:
+	   case TBSECP3_BOARD_TBS7901:	   
 		 memset(&m88rs6060_config, 0, sizeof(m88rs6060_config));
 		 m88rs6060_config.fe = &adapter->fe;
 		 m88rs6060_config.clk = 27000000;
@@ -2049,8 +2137,10 @@ int tbsecp3_dvb_init(struct tbsecp3_adapter *adapter)
     struct dvb_adapter *adap = &adapter->dvb_adapter;
     struct dvb_demux *dvbdemux = &adapter->demux;
     struct dmxdev *dmxdev;
+    struct dvb_frontend *fe;
     struct dmx_frontend *fe_hw;
     struct dmx_frontend *fe_mem;
+
     int ret;
 
     ret = dvb_register_adapter(adap, "TBSECP3 DVB Adapter",
@@ -2129,6 +2219,12 @@ int tbsecp3_dvb_init(struct tbsecp3_adapter *adapter)
         dev_err(&dev->pci_dev->dev, "frontend attach failed\n");
         ret = -ENODEV;
         goto err6;
+    }
+
+    if (adapter->fe && adapter->fe2 && swapfe) {
+        fe = adapter->fe;
+        adapter->fe = adapter->fe2;
+        adapter->fe2 = fe;
     }
 
     ret = dvb_register_frontend(adap, adapter->fe);

@@ -491,6 +491,9 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 	case FE_SAT_MOD_16APSK:
 		p->modulation = APSK_16;
 		break;
+	case FE_SAT_MOD_32APSK:
+		p->modulation = APSK_32;
+		break;
 	case FE_SAT_MOD_64APSK:
 		p->modulation = APSK_64;
 		break;
@@ -508,6 +511,9 @@ static int stid135_get_frontend(struct dvb_frontend *fe, struct dtv_frontend_pro
 		break;
 	case FE_SAT_MOD_16APSK_L:
 		p->modulation = APSK_16L;
+		break;
+	case FE_SAT_MOD_32APSK_L:
+		p->modulation = APSK_32L;
 		break;
 	case FE_SAT_MOD_64APSK_L:
 		p->modulation = APSK_64L;
