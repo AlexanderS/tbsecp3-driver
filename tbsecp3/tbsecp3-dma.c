@@ -126,7 +126,7 @@ void tbsecp3_dma_free(struct tbsecp3_dev *dev)
 		if (adapter->dma.buf[0] == NULL)
 			continue;
 
-		pci_free_consistent(dev->pci_dev,
+		dma_alloc_coherent(&dev->pci_dev->dev,
 			adapter->dma.page_size + 0x100,
 			adapter->dma.buf[0], adapter->dma.dma_addr);
 		adapter->dma.buf[0] = NULL;
@@ -149,7 +149,7 @@ int tbsecp3_dma_init(struct tbsecp3_dev *dev)
 		adapter->dma.buffer_size = dma_pkts[i] * TS_PACKET_SIZE;
 		adapter->dma.page_size = adapter->dma.buffer_size * TBSECP3_DMA_BUFFERS;
 
-		adapter->dma.buf[0] = pci_alloc_consistent(dev->pci_dev,
+		adapter->dma.buf[0] = dma_alloc_coherent(&dev->pci_dev->dev,
 				adapter->dma.page_size + 0x100,
 				&adapter->dma.dma_addr);
 		if (!adapter->dma.buf[0])
