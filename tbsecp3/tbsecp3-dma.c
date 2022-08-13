@@ -128,7 +128,8 @@ void tbsecp3_dma_free(struct tbsecp3_dev *dev)
 
 		dma_alloc_coherent(&dev->pci_dev->dev,
 			adapter->dma.page_size + 0x100,
-			adapter->dma.buf[0], adapter->dma.dma_addr);
+			//adapter->dma.buf[0], adapter->dma.dma_addr);
+			&adapter->dma.dma_addr, GFP_ATOMIC);
 		adapter->dma.buf[0] = NULL;
 		adapter++;
 	}
@@ -151,7 +152,7 @@ int tbsecp3_dma_init(struct tbsecp3_dev *dev)
 
 		adapter->dma.buf[0] = dma_alloc_coherent(&dev->pci_dev->dev,
 				adapter->dma.page_size + 0x100,
-				&adapter->dma.dma_addr);
+				&adapter->dma.dma_addr, GFP_ATOMIC);
 		if (!adapter->dma.buf[0])
 			goto err;
 
