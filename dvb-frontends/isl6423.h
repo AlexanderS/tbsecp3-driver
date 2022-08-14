@@ -30,22 +30,7 @@ struct isl6423_config {
 	u8 mod_extern;
 };
 
-#if IS_REACHABLE(CONFIG_DVB_ISL6423)
-
-
 extern struct dvb_frontend *isl6423_attach(struct dvb_frontend *fe,
 					   struct i2c_adapter *i2c,
 					   const struct isl6423_config *config);
-
-#else
-static inline struct dvb_frontend *isl6423_attach(struct dvb_frontend *fe,
-						  struct i2c_adapter *i2c,
-						  const struct isl6423_config *config)
-{
-	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
-	return NULL;
-}
-
-#endif /* CONFIG_DVB_ISL6423 */
-
 #endif /* __ISL_6423_H */

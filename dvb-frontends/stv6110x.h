@@ -44,21 +44,7 @@ struct stv6110x_devctl {
 };
 
 
-#if IS_REACHABLE(CONFIG_DVB_STV6110x)
-
 extern const struct stv6110x_devctl *stv6110x_attach(struct dvb_frontend *fe,
 					       const struct stv6110x_config *config,
 					       struct i2c_adapter *i2c);
-
-#else
-static inline const struct stv6110x_devctl *stv6110x_attach(struct dvb_frontend *fe,
-						      const struct stv6110x_config *config,
-						      struct i2c_adapter *i2c)
-{
-	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
-	return NULL;
-}
-
-#endif /* CONFIG_DVB_STV6110x */
-
 #endif /* __STV6110x_H */

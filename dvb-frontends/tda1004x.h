@@ -104,27 +104,11 @@ struct tda1004x_state {
 	enum tda1004x_demod demod_type;
 };
 
-#if IS_REACHABLE(CONFIG_DVB_TDA1004X)
 extern struct dvb_frontend* tda10045_attach(const struct tda1004x_config* config,
 					    struct i2c_adapter* i2c);
 
 extern struct dvb_frontend* tda10046_attach(const struct tda1004x_config* config,
 					    struct i2c_adapter* i2c);
-#else
-static inline struct dvb_frontend* tda10045_attach(const struct tda1004x_config* config,
-					    struct i2c_adapter* i2c)
-{
-	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
-	return NULL;
-}
-static inline struct dvb_frontend* tda10046_attach(const struct tda1004x_config* config,
-					    struct i2c_adapter* i2c)
-{
-	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
-	return NULL;
-}
-#endif // CONFIG_DVB_TDA1004X
-
 static inline int tda1004x_writereg(struct dvb_frontend *fe, u8 reg, u8 val) {
 	int r = 0;
 	u8 buf[] = {reg, val};
