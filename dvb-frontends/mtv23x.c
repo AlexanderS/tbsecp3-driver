@@ -2339,14 +2339,12 @@ err:
 	dev_dbg(&client->dev,"failed = %d\n",ret);
 	return ret;
 }
-static int mtv23x_remove(struct i2c_client*client)
+static void mtv23x_remove(struct i2c_client *client)
 {
 	struct mtv23x_dev*dev = i2c_get_clientdata(client);
 
 	regmap_exit(dev->regmap);
 	kfree(dev);
-
-	return 0;
 }
 
 static const struct i2c_device_id mtv23x_id_table[] ={

@@ -3336,7 +3336,7 @@ static int m88rs6060_probe(struct i2c_client *client,
 	return ret;
 }
 
-static int m88rs6060_remove(struct i2c_client *client)
+static void m88rs6060_remove(struct i2c_client *client)
 {
 	struct m88rs6060_dev *dev = i2c_get_clientdata(client);
 	dev_dbg(&client->dev, "\n");
@@ -3348,7 +3348,6 @@ static int m88rs6060_remove(struct i2c_client *client)
 	dev->fe.demodulator_priv = NULL;
 
 	kfree(dev);
-	return 0;
 }
 
 static const struct i2c_device_id m88rs6060_id_table[] = {
